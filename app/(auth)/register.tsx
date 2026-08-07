@@ -11,24 +11,27 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
-import { useTheme } from '../src/theme/ThemeContext';
-import { ThemeToggle } from '../src/components/ThemeToggle';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { ThemeToggle } from '../../src/components/ThemeToggle';
 import { useRouter } from 'expo-router';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
   const { isDark, tokens, colors } = useTheme();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   const isWide = width >= 768;
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [isNameFocused, setIsNameFocused] = useState(false);
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
-  const handleLogin = () => {
-    router.replace('/(tabs)');
+  const handleRegister = () => {
+    router.replace('/(tabs)/dashboard');
   };
 
   // SVG Google Logo Icon
@@ -83,7 +86,7 @@ export default function LoginScreen() {
             },
           ]}
         >
-          {/* Subtle Radial Glow overlay for Web */}
+          {/* Radial Glow overlay */}
           {Platform.OS === 'web' && (
             <div
               style={{
@@ -147,7 +150,7 @@ export default function LoginScreen() {
             },
           ]}
         >
-          {/* Floating Theme Toggle button in top right corner */}
+          {/* Floating Theme Toggle button */}
           <View style={styles.themeTogglePosition}>
             <ThemeToggle />
           </View>
@@ -163,10 +166,10 @@ export default function LoginScreen() {
               <View style={styles.formContainer}>
                 {/* Form Title & Subtitle */}
                 <Text style={[styles.formTitle, { color: isDark ? '#FFFFFF' : '#0B0D12' }]}>
-                  Welcome back
+                  Create your account
                 </Text>
                 <Text style={[styles.formSubtitle, { color: isDark ? '#98A2B3' : '#535862' }]}>
-                  Sign in to pick up where you left off.
+                  A minute to set up, a clearer month ahead.
                 </Text>
 
                 {/* Google Sign In Button */}
@@ -212,6 +215,34 @@ export default function LoginScreen() {
                       styles.dividerLine,
                       { backgroundColor: isDark ? '#252B37' : '#E9EAEB' },
                     ]}
+                  />
+                </View>
+
+                {/* Name Field */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#F5F5F5' : '#181D27' }]}>
+                    Name
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: isDark ? '#0B0D12' : '#FFFFFF',
+                        borderColor: isNameFocused
+                          ? colors.primaryFocus || '#0071e3'
+                          : isDark
+                          ? '#252B37'
+                          : '#D5D7DA',
+                        color: isDark ? '#FFFFFF' : '#181D27',
+                      },
+                    ]}
+                    placeholder="John Doe/Jane Doe"
+                    placeholderTextColor={isDark ? '#535862' : '#A3A7AE'}
+                    value={name}
+                    onChangeText={setName}
+                    onFocus={() => setIsNameFocused(true)}
+                    onBlur={() => setIsNameFocused(false)}
+                    autoCapitalize="words"
                   />
                 </View>
 
@@ -272,16 +303,16 @@ export default function LoginScreen() {
                   />
                 </View>
 
-                {/* Submit Sign In Button */}
+                {/* Submit Sign Up Button */}
                 <TouchableOpacity
                   style={[styles.primaryButton, { backgroundColor: '#225A39' }]}
-                  onPress={handleLogin}
+                  onPress={handleRegister}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.primaryButtonText}>Sign in</Text>
+                  <Text style={styles.primaryButtonText}>Sign up</Text>
                 </TouchableOpacity>
 
-                {/* Footer Signup Link */}
+                {/* Footer Signin Link */}
                 <View style={styles.signupContainer}>
                   <Text
                     style={[
@@ -289,16 +320,16 @@ export default function LoginScreen() {
                       { color: isDark ? '#98A2B3' : '#717680' },
                     ]}
                   >
-                    New to Vinora?{' '}
+                    Already have an account?{' '}
                   </Text>
-                  <TouchableOpacity onPress={() => router.push('/register')}>
+                  <TouchableOpacity onPress={() => router.push('/')}>
                     <Text
                       style={[
                         styles.signupLink,
                         { color: isDark ? '#FFFFFF' : '#181D27' },
                       ]}
                     >
-                      Sign up
+                      Sign in
                     </Text>
                   </TouchableOpacity>
                 </View>
