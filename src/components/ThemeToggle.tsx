@@ -1,56 +1,64 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Platform, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { Sun, Moon, LogIn, UserPlus } from 'lucide-react';
 
-export const ThemeToggle: React.FC = () => {
-  const { isDark, setThemeMode, themeMode } = useTheme();
+interface ControlsProps {
+  theme: 'light' | 'dark';
+  authMode: 'login' | 'register';
+  onToggleTheme: (theme: 'light' | 'dark') => void;
+  onToggleAuthMode: (mode: 'login' | 'register') => void;
+}
 
-  const toggleTheme = () => {
-    setThemeMode(isDark ? 'light' : 'dark');
-  };
-
+export const ThemeToggle: React.FC<ControlsProps> = ({
+  theme,
+  authMode,
+  onToggleTheme,
+  onToggleAuthMode,
+}) => {
   return (
-    <TouchableOpacity
-      style={[
-        styles.container,
-        {
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
-        },
-      ]}
-      onPress={toggleTheme}
-      activeOpacity={0.7}
-      accessibilityLabel="Toggle Light/Dark Theme"
-    >
-      <Text style={styles.icon}>{isDark ? '☀️' : '🌙'}</Text>
-      <Text
-        style={[
-          styles.text,
-          { color: isDark ? '#FFFFFF' : '#181D27' },
-        ]}
-      >
-        {isDark ? 'Light' : 'Dark'}
-      </Text>
-    </TouchableOpacity>
+    <div className="theme-switcher-bar" role="region" aria-label="Theme & Page Controls">
+      {/* Auth View Switcher */}
+      <div style={{ display: 'flex', gap: '2px', paddingRight: '6px', borderRight: '1px solid rgba(150, 150, 150, 0.2)' }}>
+        <button
+          type="button"
+          className={`theme-toggle-btn ${authMode === 'login' ? 'active' : ''}`}
+          onClick={() => onToggleAuthMode('login')}
+          aria-label="Switch to Login page"
+        >
+          <LogIn size={13} />
+          <span>Login</span>
+        </button>
+        <button
+          type="button"
+          className={`theme-toggle-btn ${authMode === 'register' ? 'active' : ''}`}
+          onClick={() => onToggleAuthMode('register')}
+          aria-label="Switch to Register page"
+        >
+          <UserPlus size={13} />
+          <span>Register</span>
+        </button>
+      </div>
+
+      {/* Theme Switcher */}
+      <div style={{ display: 'flex', gap: '2px', paddingLeft: '6px' }}>
+        <button
+          type="button"
+          className={`theme-toggle-btn ${theme === 'light' ? 'active' : ''}`}
+          onClick={() => onToggleTheme('light')}
+          aria-label="Switch to Light mode"
+        >
+          <Sun size={13} />
+          <span>Light</span>
+        </button>
+        <button
+          type="button"
+          className={`theme-toggle-btn ${theme === 'dark' ? 'active' : ''}`}
+          onClick={() => onToggleTheme('dark')}
+          aria-label="Switch to Dark mode"
+        >
+          <Moon size={13} />
+          <span>Dark</span>
+        </button>
+      </div>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    cursor: Platform.OS === 'web' ? 'pointer' : 'default',
-  } as any,
-  icon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  text: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-});
