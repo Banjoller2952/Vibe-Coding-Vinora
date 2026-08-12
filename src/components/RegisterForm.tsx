@@ -1,17 +1,36 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { GoogleAuthModal } from './GoogleAuthModal';
+import { UserProfile } from './LoginForm';
 
 interface RegisterFormProps {
-  onRegisterSuccess: (name: string, email: string) => void;
+  onRegisterSuccess: (user: UserProfile) => void;
   onSwitchToLogin: () => void;
+  onErrorMsg?: (msg: string) => void;
 }
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onSwitchToLogin }) => {
+export const RegisterForm: React.FC<RegisterFormProps> = ({
+  onRegisterSuccess,
+  onSwitchToLogin,
+  onErrorMsg,
+}) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    isGoogleLoading,
+    isModalOpen,
+    triggerGoogleLogin,
+    closeModal,
+    handleSelectAccount,
+  } = useGoogleAuth({
+    onSuccess: onRegisterSuccess,
+    onError: onErrorMsg,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,15 +39,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, o
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onRegisterSuccess(name, email);
-    }, 600);
-  };
-
-  const handleGoogleSignIn = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      onRegisterSuccess('Google User', 'user@google.com');
+      onRegisterSuccess({ name, email });
     }, 600);
   };
 
@@ -44,8 +55,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, o
       <button
         type="button"
         className="btn-google"
-        onClick={handleGoogleSignIn}
-        disabled={isLoading}
+        onClick={triggerGoogleLogin}
+        disabled={isLoading || isGoogleLoading}
       >
         <svg width="18" height="18" viewBox="0 0 24 24">
           <path
@@ -65,7 +76,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, o
             d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
           />
         </svg>
-        <span>Sign in with Google</span>
+        <span>{isGoogleLoading ? 'Connecting to Google...' : 'Sign in with Google'}</span>
       </button>
 
       {/* Divider */}
@@ -137,7 +148,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, o
           </div>
         </div>
 
-        <button type="submit" className="btn-primary" disabled={isLoading}>
+        <button type="submit" className="btn-primary" disabled={isLoading || isGoogleLoading}>
           {isLoading ? (
             <span>Creating account...</span>
           ) : (
@@ -156,6 +167,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, o
           Sign in
         </span>
       </div>
+
+      {/* Fallback Google Auth Modal */}
+      <GoogleAuthModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSelectAccount={handleSelectAccount}
+      />
     </div>
   );
 };
+
+

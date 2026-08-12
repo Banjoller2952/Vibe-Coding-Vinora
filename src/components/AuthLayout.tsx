@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { BrandPanel } from './BrandPanel';
-import { LoginForm } from './LoginForm';
+import { LoginForm, UserProfile } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
 import { ThemeToggle } from './ThemeToggle';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface AuthLayoutProps {
   theme: 'light' | 'dark';
   authMode: 'login' | 'register';
   onToggleTheme: (theme: 'light' | 'dark') => void;
   onToggleAuthMode: (mode: 'login' | 'register') => void;
+  onLoginSuccess: (user: UserProfile) => void;
 }
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({
@@ -17,26 +18,38 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   authMode,
   onToggleTheme,
   onToggleAuthMode,
+  onLoginSuccess,
 }) => {
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const handleSignInSuccess = (userEmail: string) => {
-    setToastMessage(`Welcome back! Signed in as ${userEmail}`);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
     setTimeout(() => {
-      setToastMessage(null);
+      setToast(null);
     }, 4000);
   };
 
-  const handleRegisterSuccess = (name: string, userEmail: string) => {
-    setToastMessage(`Account created successfully for ${name} (${userEmail})!`);
+  const handleSignInSuccess = (user: UserProfile) => {
+    showToast(`Welcome back! Signed in as ${user.name}`, 'success');
     setTimeout(() => {
-      setToastMessage(null);
-    }, 4000);
+      onLoginSuccess(user);
+    }, 400);
+  };
+
+  const handleRegisterSuccess = (user: UserProfile) => {
+    showToast(`Account created successfully for ${user.name}! Redirecting...`, 'success');
+    setTimeout(() => {
+      onLoginSuccess(user);
+    }, 400);
+  };
+
+  const handleErrorMsg = (msg: string) => {
+    showToast(msg, 'error');
   };
 
   return (
     <div className="vinora-layout" data-theme={theme}>
-      {/* Floating Controls Bar (Theme + Auth Mode) */}
+      {/* Floating Controls Bar */}
       <ThemeToggle
         theme={theme}
         authMode={authMode}
@@ -53,22 +66,32 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <LoginForm
             onSignInSuccess={handleSignInSuccess}
             onSwitchToRegister={() => onToggleAuthMode('register')}
+            onErrorMsg={handleErrorMsg}
           />
         ) : (
           <RegisterForm
             onRegisterSuccess={handleRegisterSuccess}
             onSwitchToLogin={() => onToggleAuthMode('login')}
+            onErrorMsg={handleErrorMsg}
           />
         )}
       </div>
 
       {/* Toast Feedback */}
-      {toastMessage && (
-        <div className="toast-notification">
-          <CheckCircle2 size={20} color="#10B981" />
-          <span>{toastMessage}</span>
+      {toast && (
+        <div
+          className="toast-notification"
+          style={toast.type === 'error' ? { background: '#991B1B' } : undefined}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle2 size={20} color="#10B981" />
+          ) : (
+            <AlertCircle size={20} color="#FCA5A5" />
+          )}
+          <span>{toast.message}</span>
         </div>
       )}
     </div>
   );
 };
+
