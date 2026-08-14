@@ -1,26 +1,12 @@
 import React from 'react';
+import { VinoraBrandIcon } from './VinoraBrandIcon';
 
 export const BrandPanel: React.FC = () => {
   return (
     <div className="brand-panel">
       {/* Brand Header */}
       <div className="brand-header">
-        <div className="brand-logo-icon" aria-label="Vinora logo">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {/* 4-point sparkle icon */}
-            <path d="M12 2v20M2 12h20M6 6l12 12M18 6L6 18" opacity="0" />
-            <path d="M12 3c0 4.5-4.5 9-9 9 4.5 0 9 4.5 9 9 0-4.5 4.5-9 9-9-4.5 0-9-4.5-9-9z" fill="currentColor" stroke="none" />
-          </svg>
-        </div>
+        <VinoraBrandIcon size={38} variant="green" />
         <span className="brand-title">Vinora</span>
       </div>
 

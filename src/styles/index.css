@@ -1371,13 +1371,289 @@ button, input, select {
   cursor: pointer;
 }
 
-/* Responsive Grid */
+/* ==========================================================================
+   MOBILE TOP HEADER & DRAWER STYLES
+   ========================================================================== */
+.dash-mobile-header {
+  display: none;
+}
+
+.mobile-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN MEDIA QUERIES (DESKTOP LARGE, DESKTOP, TABLET, MOBILE)
+   ========================================================================== */
+
+/* 1. Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+  .dash-scroll-container {
+    max-width: 1440px;
+    padding: 2.5rem;
+  }
+}
+
+/* 2. Standard Desktop / Laptop (1025px - 1439px) */
+@media (min-width: 1025px) and (max-width: 1439px) {
+  .dash-scroll-container {
+    padding: 2rem;
+  }
+}
+
+/* 3. Tablet View (769px - 1024px) */
 @media (max-width: 1024px) {
   .dash-grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
   .chart-card, .where-card, .activity-card, .featured-goal-card {
     grid-column: 1 / -1;
+  }
+  .hero-stats-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Auth Screen Stacked Layout */
+  .vinora-layout {
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 100vh;
+  }
+  .brand-panel {
+    padding: 3rem 2rem 2rem 2rem;
+    min-height: auto;
+  }
+  .brand-content {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  .hero-heading {
+    font-size: 2.25rem;
+  }
+  .auth-panel {
+    padding: 2.5rem 1.5rem;
+    min-height: auto;
+  }
+  .theme-switcher-bar {
+    top: 1rem;
+    right: 1rem;
+  }
+}
+
+/* 4. Mobile Devices (< 768px) */
+@media (max-width: 768px) {
+  /* Dashboard App Container */
+  .vinora-dashboard-app {
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Mobile Sticky Header */
+  .dash-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background-color: var(--dash-sidebar-bg);
+    border-bottom: 1px solid var(--dash-sidebar-border);
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .mobile-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .mobile-hamburger-btn {
+    background: transparent;
+    border: none;
+    color: var(--dash-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 8px;
+  }
+
+  .mobile-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .mobile-theme-btn {
+    background: transparent;
+    border: none;
+    color: var(--dash-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 50%;
+  }
+
+  /* Off-Canvas Mobile Drawer Sidebar */
+  .dash-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px !important;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dash-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .dash-collapse-btn {
+    display: none;
+  }
+
+  /* Main scroll area on mobile */
+  .dash-main {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .dash-scroll-container {
+    padding: 1rem 0.85rem;
+    gap: 1.25rem;
+  }
+
+  /* Hero Greeting Card mobile refinements */
+  .hero-greeting-card {
+    padding: 1.35rem 1.15rem;
+    border-radius: 16px;
+  }
+
+  .balance-amount {
+    font-size: 2.2rem;
+  }
+
+  .hero-insight-text {
+    font-size: 0.875rem;
+  }
+
+  .hero-action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.65rem;
+  }
+
+  .btn-log-tx, .btn-see-month {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Hero Stats */
+  .hero-stats-col {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .stat-card {
+    padding: 1.15rem;
+    border-radius: 16px;
+  }
+
+  .stat-amount {
+    font-size: 1.75rem;
+  }
+
+  /* Dashboard Cards */
+  .dash-card, .featured-goal-card {
+    padding: 1.25rem 1rem;
+    border-radius: 16px;
+  }
+
+  .card-title {
+    font-size: 1.15rem;
+  }
+
+  .goal-title {
+    font-size: 1.4rem;
+  }
+
+  .goal-big-amount {
+    font-size: 1.8rem;
+  }
+
+  /* Footer */
+  .dash-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+    padding-top: 1rem;
+  }
+
+  /* Modals on Mobile */
+  .modal-content, .google-auth-dialog {
+    width: calc(100vw - 1.5rem);
+    max-width: 100%;
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 5. Mobile Extra Small (< 480px) */
+@media (max-width: 480px) {
+  .balance-amount {
+    font-size: 1.85rem;
+  }
+
+  .balance-badge {
+    font-size: 0.725rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .brand-panel {
+    padding: 2rem 1.15rem 1.5rem 1.15rem;
+  }
+
+  .hero-heading {
+    font-size: 1.85rem;
+  }
+
+  .auth-panel {
+    padding: 1.75rem 1rem;
+  }
+
+  .theme-switcher-bar {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 0 auto 1.5rem auto;
+    align-self: center;
   }
 }
 

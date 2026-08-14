@@ -15,9 +15,12 @@ import {
   Wallet,
   Moon,
   Sun,
+  Menu,
+  X,
 } from 'lucide-react';
 import { UserProfile } from './LoginForm';
 import { LogTransactionModal, TransactionItem } from './LogTransactionModal';
+import { VinoraBrandIcon } from './VinoraBrandIcon';
 
 interface DashboardLayoutProps {
   user: UserProfile;
@@ -43,6 +46,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions' | 'savings' | 'reports' | 'settings'>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<TransactionItem[]>(INITIAL_TRANSACTIONS);
   const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
@@ -127,16 +131,63 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   // Greeting name
   const firstName = user.name.split(' ')[0].toUpperCase();
 
+  const handleNavClick = (tab: 'dashboard' | 'transactions' | 'savings' | 'reports' | 'settings') => {
+    setActiveTab(tab);
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <div className="vinora-dashboard-app" data-theme={theme}>
+      {/* Mobile Top Bar */}
+      <header className="dash-mobile-header">
+        <div className="mobile-header-left">
+          <button
+            className="mobile-hamburger-btn"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <div className="dash-logo mobile-logo">
+            <VinoraBrandIcon size={32} variant={theme === 'dark' ? 'green' : 'green'} />
+            <span className="logo-text">Vinora</span>
+          </div>
+        </div>
+
+        <div className="mobile-header-right">
+          <button
+            className="mobile-theme-btn"
+            onClick={() => onToggleTheme(theme === 'light' ? 'dark' : 'light')}
+            aria-label="Toggle theme"
+          >
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+          <div className="mobile-user-avatar">
+            {user.avatar ? (
+              <img src={user.avatar} alt={user.name} className="user-avatar-img" />
+            ) : (
+              <div className="user-avatar-initials">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Backdrop overlay for mobile drawer */}
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-drawer-backdrop"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`dash-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+      <aside className={`dash-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-top">
           {/* Logo */}
           <div className="dash-logo">
-            <div className="logo-sparkle-icon">
-              <Sparkles size={20} color={theme === 'dark' ? '#5FAF7A' : '#225A39'} />
-            </div>
+            <VinoraBrandIcon size={34} variant={theme === 'dark' ? 'green' : 'green'} />
             {!isSidebarCollapsed && <span className="logo-text">Vinora</span>}
           </div>
 
@@ -144,49 +195,49 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <nav className="dash-nav">
             <button
               className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => handleNavClick('dashboard')}
               title="Dashboard"
             >
               <LayoutDashboard size={18} />
-              {!isSidebarCollapsed && <span>Dashboard</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span>Dashboard</span>}
             </button>
 
             <button
               className={`nav-item ${activeTab === 'transactions' ? 'active' : ''}`}
-              onClick={() => setActiveTab('transactions')}
+              onClick={() => handleNavClick('transactions')}
               title="Transactions"
             >
               <ArrowLeftRight size={18} />
-              {!isSidebarCollapsed && <span>Transactions</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span>Transactions</span>}
             </button>
 
             <button
               className={`nav-item ${activeTab === 'savings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('savings')}
+              onClick={() => handleNavClick('savings')}
               title="Savings"
             >
               <PiggyBank size={18} />
-              {!isSidebarCollapsed && <span>Savings</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span>Savings</span>}
             </button>
 
             <button
               className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`}
-              onClick={() => setActiveTab('reports')}
+              onClick={() => handleNavClick('reports')}
               title="Reports"
             >
               <PieChart size={18} />
-              {!isSidebarCollapsed && <span>Reports</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span>Reports</span>}
             </button>
 
             <div className="nav-divider"></div>
 
             <button
               className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('settings')}
+              onClick={() => handleNavClick('settings')}
               title="Settings"
             >
               <Settings size={18} />
-              {!isSidebarCollapsed && <span>Settings</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span>Settings</span>}
             </button>
           </nav>
         </div>
@@ -201,7 +252,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {user.name.charAt(0).toUpperCase()}
               </div>
             )}
-            {!isSidebarCollapsed && (
+            {(!isSidebarCollapsed || isMobileMenuOpen) && (
               <div className="user-info-text">
                 <span className="user-fullname" title={user.name}>{user.name}</span>
                 <button className="btn-signout" onClick={onSignOut}>
@@ -220,7 +271,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
             >
               {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-              {!isSidebarCollapsed && <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
             </button>
 
             <button
