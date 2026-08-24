@@ -18,6 +18,8 @@ import { LogTransactionModal, TransactionItem } from './LogTransactionModal';
 import { VinoraBrandIcon } from './VinoraBrandIcon';
 import { TransactionsView, ExtendedTransactionItem } from './TransactionsView';
 import { DashboardView } from './DashboardView';
+import { SavingsView } from './SavingsView';
+import { ReportsView } from './ReportsView';
 
 interface DashboardLayoutProps {
   user: UserProfile;
@@ -386,6 +388,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               onEditTransaction={handleOpenEditModal}
               onUpdateTransactionColor={handleUpdateTransactionColor}
             />
+          ) : activeTab === 'savings' ? (
+            <SavingsView theme={theme} />
+          ) : activeTab === 'reports' ? (
+            <ReportsView theme={theme} />
           ) : activeTab !== 'dashboard' ? (
             /* Tab Placeholder Views */
             <div className="tab-placeholder-card">

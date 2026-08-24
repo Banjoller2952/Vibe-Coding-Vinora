@@ -7,9 +7,9 @@ import {
   X,
   Edit3,
   Trash2,
-  ChevronDown,
 } from 'lucide-react';
 import { TransactionItem } from './LogTransactionModal';
+import { MoreFiltersModal, FilterState } from './MoreFiltersModal';
 
 export interface ExtendedTransactionItem extends TransactionItem {
   note?: string;
@@ -62,10 +62,15 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
 }) => {
   const [filterTab, setFilterTab] = useState<'all' | 'income' | 'expense'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'amount-high' | 'amount-low'>('date-desc');
-  const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [isMoreFiltersModalOpen, setIsMoreFiltersModalOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
+    category: 'all',
+    minAmount: '',
+    maxAmount: '',
+    fromDate: '',
+    toDate: '',
+  });
 
   // Helper to format currency correctly
   const formatAmount = (num: number, includeSign = true) => {
@@ -90,36 +95,60 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
 
   // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
-    return transactions
-      .filter((tx) => {
-        // 1. Filter by Tab (All / Income / Expense)
-        if (filterTab === 'income' && tx.amount <= 0) return false;
-        if (filterTab === 'expense' && tx.amount >= 0) return false;
+    return transactions.filter((tx) => {
+      // 1. Filter by Tab (All / Income / Expense)
+      if (filterTab === 'income' && tx.amount <= 0) return false;
+      if (filterTab === 'expense' && tx.amount >= 0) return false;
 
-        // 2. Filter by Category
-        if (selectedCategory !== 'all' && tx.category !== selectedCategory) return false;
+      // 2. Filter by Category
+      if (
+        activeFilters.category !== 'all' &&
+        tx.category.toLowerCase() !== activeFilters.category.toLowerCase()
+      ) {
+        return false;
+      }
 
-        // 3. Filter by Search Query
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          const titleMatch = tx.title.toLowerCase().includes(q);
-          const noteMatch = tx.note ? tx.note.toLowerCase().includes(q) : false;
-          const subMatch = tx.subtitle ? tx.subtitle.toLowerCase().includes(q) : false;
-          const catMatch = tx.category.toLowerCase().includes(q);
-          const badgeMatch = tx.badge.toLowerCase().includes(q);
-          const dateMatch = (tx.dateGroup || tx.date).toLowerCase().includes(q);
+      // 3. Filter by Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const titleMatch = tx.title.toLowerCase().includes(q);
+        const noteMatch = tx.note ? tx.note.toLowerCase().includes(q) : false;
+        const subMatch = tx.subtitle ? tx.subtitle.toLowerCase().includes(q) : false;
+        const catMatch = tx.category.toLowerCase().includes(q);
+        const badgeMatch = tx.badge.toLowerCase().includes(q);
+        const dateMatch = (tx.dateGroup || tx.date).toLowerCase().includes(q);
 
-          return titleMatch || noteMatch || subMatch || catMatch || badgeMatch || dateMatch;
+        if (!titleMatch && !noteMatch && !subMatch && !catMatch && !badgeMatch && !dateMatch) return false;
+      }
+
+      // 4. Filter by Amount Range (Min & Max amount)
+      const absAmt = Math.abs(tx.amount);
+      if (activeFilters.minAmount && !isNaN(parseFloat(activeFilters.minAmount))) {
+        if (absAmt < parseFloat(activeFilters.minAmount)) return false;
+      }
+      if (activeFilters.maxAmount && !isNaN(parseFloat(activeFilters.maxAmount))) {
+        if (absAmt > parseFloat(activeFilters.maxAmount)) return false;
+      }
+
+      // 5. Filter by Date Range (From & To date)
+      if (activeFilters.fromDate || activeFilters.toDate) {
+        const txDateObj = new Date(tx.date);
+        if (!isNaN(txDateObj.getTime())) {
+          if (activeFilters.fromDate) {
+            const fromObj = new Date(activeFilters.fromDate);
+            if (txDateObj < fromObj) return false;
+          }
+          if (activeFilters.toDate) {
+            const toObj = new Date(activeFilters.toDate);
+            toObj.setHours(23, 59, 59, 999);
+            if (txDateObj > toObj) return false;
+          }
         }
+      }
 
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'amount-high') return Math.abs(b.amount) - Math.abs(a.amount);
-        if (sortBy === 'amount-low') return Math.abs(a.amount) - Math.abs(b.amount);
-        return 0;
-      });
-  }, [transactions, filterTab, selectedCategory, searchQuery, sortBy]);
+      return true;
+    });
+  }, [transactions, filterTab, searchQuery, activeFilters]);
 
   // Group transactions by dateGroup
   const groupedTransactions = useMemo(() => {
@@ -249,82 +278,42 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </button>
           </div>
 
-          {/* More Filters Toggle Button */}
+          {/* More Filters Modal Trigger Button */}
           <button
-            className={`btn-more-filters ${isMoreFiltersOpen || selectedCategory !== 'all' ? 'active' : ''}`}
+            className={`btn-more-filters ${
+              isMoreFiltersModalOpen ||
+              activeFilters.category !== 'all' ||
+              activeFilters.minAmount ||
+              activeFilters.maxAmount ||
+              activeFilters.fromDate ||
+              activeFilters.toDate
+                ? 'active'
+                : ''
+            }`}
             onClick={(e) => {
               e.stopPropagation();
-              setIsMoreFiltersOpen(!isMoreFiltersOpen);
+              setIsMoreFiltersModalOpen(true);
             }}
           >
             <SlidersHorizontal size={15} />
             <span>More filters</span>
-            {(selectedCategory !== 'all' || sortBy !== 'date-desc') && (
-              <span className="filter-active-dot" />
-            )}
+            {(activeFilters.category !== 'all' ||
+              activeFilters.minAmount ||
+              activeFilters.maxAmount ||
+              activeFilters.fromDate ||
+              activeFilters.toDate) && <span className="filter-active-dot" />}
           </button>
         </div>
       </div>
 
-      {/* EXPANDABLE MORE FILTERS PANEL */}
-      {isMoreFiltersOpen && (
-        <div className="tx-more-filters-panel" onClick={(e) => e.stopPropagation()}>
-          <div className="more-filters-grid">
-            <div className="filter-group">
-              <label className="filter-label">Category</label>
-              <div className="filter-select-wrapper">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="filter-select"
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="select-arrow" />
-              </div>
-            </div>
-
-            <div className="filter-group">
-              <label className="filter-label">Sort By</label>
-              <div className="filter-select-wrapper">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="filter-select"
-                >
-                  <option value="date-desc">Date: Newest First</option>
-                  <option value="date-asc">Date: Oldest First</option>
-                  <option value="amount-high">Amount: High to Low</option>
-                  <option value="amount-low">Amount: Low to High</option>
-                </select>
-                <ChevronDown size={14} className="select-arrow" />
-              </div>
-            </div>
-
-            <div className="filter-actions">
-              {(selectedCategory !== 'all' || sortBy !== 'date-desc') && (
-                <button
-                  className="btn-reset-filters"
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setSortBy('date-desc');
-                  }}
-                >
-                  Reset filters
-                </button>
-              )}
-              <button className="btn-close-filters" onClick={() => setIsMoreFiltersOpen(false)}>
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MORE FILTERS MODAL (Figma Node 2236-3829) */}
+      <MoreFiltersModal
+        isOpen={isMoreFiltersModalOpen}
+        onClose={() => setIsMoreFiltersModalOpen(false)}
+        initialFilters={activeFilters}
+        onApplyFilters={(newFilters) => setActiveFilters(newFilters)}
+        availableCategories={categories}
+      />
 
       {/* TRANSACTIONS LIST SECTION */}
       <div className="tx-list-container">
@@ -340,8 +329,13 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               onClick={() => {
                 setFilterTab('all');
                 setSearchQuery('');
-                setSelectedCategory('all');
-                setSortBy('date-desc');
+                setActiveFilters({
+                  category: 'all',
+                  minAmount: '',
+                  maxAmount: '',
+                  fromDate: '',
+                  toDate: '',
+                });
               }}
             >
               Clear filters

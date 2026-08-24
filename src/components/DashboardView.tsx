@@ -27,60 +27,112 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateTab,
 }) => {
   const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
+  const [activeSeries, setActiveSeries] = useState<'all' | 'income' | 'expense'>('all');
 
   // Six months of flow chart data
-  const monthData = [
-    { label: 'Feb', income: 3100, expense: 2100, x: 60, incY: 51.5, expY: 86.5 },
-    { label: 'Mar', income: 3350, expense: 2400, x: 140, incY: 42.75, expY: 76 },
-    { label: 'Apr', income: 3400, expense: 2050, x: 220, incY: 41, expY: 88.25 },
-    { label: 'May', income: 3850, expense: 2480, x: 300, incY: 25.25, expY: 73.25 },
-    { label: 'Jun', income: 3450, expense: 2300, x: 380, incY: 39.25, expY: 79.5 },
-    { label: 'Jul', income: 3870, expense: 1483, x: 460, incY: 24.55, expY: 108.1 },
+  const rawMonthData = [
+    { label: 'Feb', income: 3100, expense: 2100, x: 60 },
+    { label: 'Mar', income: 3350, expense: 2400, x: 140 },
+    { label: 'Apr', income: 3400, expense: 2050, x: 220 },
+    { label: 'May', income: 3850, expense: 2480, x: 300 },
+    { label: 'Jun', income: 3450, expense: 2300, x: 380 },
+    { label: 'Jul', income: 3870, expense: 1483, x: 460 },
   ];
 
-  // Helper function for ultra-smooth Bezier cubic spline paths
-  const getSmoothPath = (points: { x: number; y: number }[], smoothing = 0.18) => {
-    const line = (a: { x: number; y: number }, b: { x: number; y: number }) => {
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      return {
-        length: Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)),
-        angle: Math.atan2(dy, dx),
-      };
-    };
+  const yMax = 4000;
+  const topY = 20;
+  const bottomY = 160;
+  const chartHeight = bottomY - topY;
 
-    const controlPoint = (
-      current: { x: number; y: number },
-      previous?: { x: number; y: number },
-      next?: { x: number; y: number },
-      reverse?: boolean
-    ) => {
-      const p = previous || current;
-      const n = next || current;
-      const o = line(p, n);
-      const angle = o.angle + (reverse ? Math.PI : 0);
-      const length = o.length * smoothing;
-      const x = current.x + Math.cos(angle) * length;
-      const y = current.y + Math.sin(angle) * length;
-      return { x, y };
-    };
+  const monthData = rawMonthData.map((pt) => ({
+    ...pt,
+    incY: bottomY - (pt.income / yMax) * chartHeight,
+    expY: bottomY - (pt.expense / yMax) * chartHeight,
+  }));
 
-    return points.reduce((acc, point, i, a) => {
-      if (i === 0) return `M ${point.x.toFixed(2)},${point.y.toFixed(2)}`;
-      const cps = controlPoint(a[i - 1], a[i - 2], point);
-      const cpe = controlPoint(point, a[i - 1], a[i + 1], true);
-      return `${acc} C ${cps.x.toFixed(2)},${cps.y.toFixed(2)} ${cpe.x.toFixed(2)},${cpe.y.toFixed(2)} ${point.x.toFixed(2)},${point.y.toFixed(2)}`;
-    }, '');
+  // Monotone Cubic Spline (Fritsch-Carlson) for smooth, natural curves without overshoot
+  const getMonotoneCubicPath = (points: { x: number; y: number }[]) => {
+    if (points.length === 0) return '';
+    if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
+
+    const n = points.length;
+    const dxs: number[] = [];
+    const dys: number[] = [];
+    const ms: number[] = [];
+
+    for (let i = 0; i < n - 1; i++) {
+      const dx = points[i + 1].x - points[i].x;
+      const dy = points[i + 1].y - points[i].y;
+      dxs.push(dx);
+      dys.push(dy);
+      ms.push(dy / dx);
+    }
+
+    const c1s: number[] = [ms[0]];
+    for (let i = 0; i < n - 2; i++) {
+      const m = ms[i];
+      const mNext = ms[i + 1];
+      if (m * mNext <= 0) {
+        c1s.push(0);
+      } else {
+        const dx = dxs[i];
+        const dxNext = dxs[i + 1];
+        const common = dx + dxNext;
+        c1s.push((3 * common) / ((common + dxNext) / m + (common + dx) / mNext));
+      }
+    }
+    c1s.push(ms[ms.length - 1]);
+
+    const c2s: number[] = [];
+    for (let i = 0; i < c1s.length - 1; i++) {
+      const m = ms[i];
+      if (m === 0) {
+        c2s.push(0);
+        c1s[i + 1] = 0;
+      } else {
+        const a = c1s[i] / m;
+        const b = c1s[i + 1] / m;
+        const h = Math.hypot(a, b);
+        if (h > 9) {
+          const t = 3 / h;
+          c2s.push(t * a * m);
+          c1s[i + 1] = t * b * m;
+        } else {
+          c2s.push(c1s[i]);
+        }
+      }
+    }
+    c2s.push(c1s[c1s.length - 1]);
+
+    let path = `M ${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
+    for (let i = 0; i < n - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const dx = dxs[i];
+
+      const cp1x = p1.x + dx / 3;
+      const cp1y = p1.y + (c2s[i] * dx) / 3;
+
+      const cp2x = p2.x - dx / 3;
+      const cp2y = p2.y - (c1s[i + 1] * dx) / 3;
+
+      path += ` C ${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
+    }
+
+    return path;
   };
 
   const incomePoints = monthData.map((pt) => ({ x: pt.x, y: pt.incY }));
   const expensePoints = monthData.map((pt) => ({ x: pt.x, y: pt.expY }));
 
-  const incomeLinePath = getSmoothPath(incomePoints, 0.18);
+  const incomeLinePath = getMonotoneCubicPath(incomePoints);
   const incomeAreaPath = `${incomeLinePath} L 460,160 L 60,160 Z`;
 
-  const expenseLinePath = getSmoothPath(expensePoints, 0.18);
+  const expenseLinePath = getMonotoneCubicPath(expensePoints);
   const expenseAreaPath = `${expenseLinePath} L 460,160 L 60,160 Z`;
+
+  const incomeColor = theme === 'dark' ? '#5FAF7A' : '#225A39';
+  const expenseColor = theme === 'dark' ? '#E07A48' : '#C26D40';
 
   // First name greeting fallback to ELENA if generic
   const firstName = user?.name ? user.name.split(' ')[0].toUpperCase() : 'ELENA';
@@ -164,13 +216,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <svg className="flow-chart-svg" viewBox="0 0 500 180" preserveAspectRatio="none">
             <defs>
               <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#225a39" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#225a39" stopOpacity="0.0" />
+                <stop offset="0%" stopColor={incomeColor} stopOpacity="0.22" />
+                <stop offset="100%" stopColor={incomeColor} stopOpacity="0.0" />
               </linearGradient>
               <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#C26D40" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="#C26D40" stopOpacity="0.0" />
+                <stop offset="0%" stopColor={expenseColor} stopOpacity="0.18" />
+                <stop offset="100%" stopColor={expenseColor} stopOpacity="0.0" />
               </linearGradient>
+
+              {/* Ambient Glow drop shadows */}
+              <filter id="incomeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3.5" floodColor={incomeColor} floodOpacity="0.35" />
+              </filter>
+              <filter id="expenseGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3.5" floodColor={expenseColor} floodOpacity="0.35" />
+              </filter>
+              <filter id="tooltipShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000000" floodOpacity="0.12" />
+              </filter>
             </defs>
 
             {/* Horizontal Grid lines */}
@@ -187,104 +250,253 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <text x="30" y="129" className="axis-label" textAnchor="end">1000</text>
             <text x="30" y="164" className="axis-label" textAnchor="end">0</text>
 
+            {/* Vertical Guideline on Hover */}
+            {hoveredMonthIndex !== null && (
+              <line
+                x1={monthData[hoveredMonthIndex].x}
+                y1="20"
+                x2={monthData[hoveredMonthIndex].x}
+                y2="160"
+                className="chart-vertical-guide"
+              />
+            )}
+
             {/* Income Area Fill */}
-            <path d={incomeAreaPath} fill="url(#incomeGrad)" />
-            {/* Income Smooth Line */}
-            <path
-              d={incomeLinePath}
-              fill="none"
-              stroke={theme === 'dark' ? '#5FAF7A' : '#225A39'}
-              strokeWidth="2.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            {(activeSeries === 'all' || activeSeries === 'income') && (
+              <path
+                d={incomeAreaPath}
+                fill="url(#incomeGrad)"
+              />
+            )}
 
             {/* Expense Area Fill */}
-            <path d={expenseAreaPath} fill="url(#expenseGrad)" />
+            {(activeSeries === 'all' || activeSeries === 'expense') && (
+              <path
+                d={expenseAreaPath}
+                fill="url(#expenseGrad)"
+              />
+            )}
+
+            {/* Income Smooth Line */}
+            {(activeSeries === 'all' || activeSeries === 'income') && (
+              <path
+                d={incomeLinePath}
+                fill="none"
+                stroke={incomeColor}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="url(#incomeGlow)"
+              />
+            )}
+
             {/* Expense Smooth Line */}
-            <path
-              d={expenseLinePath}
-              fill="none"
-              stroke="#C26D40"
-              strokeWidth="2.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            {(activeSeries === 'all' || activeSeries === 'expense') && (
+              <path
+                d={expenseLinePath}
+                fill="none"
+                stroke={expenseColor}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="url(#expenseGlow)"
+              />
+            )}
 
-            {/* Month Data Dots & Hover Overlay */}
-            {monthData.map((pt, idx) => (
-              <g
-                key={pt.label}
-                onMouseEnter={() => setHoveredMonthIndex(idx)}
-                onMouseLeave={() => setHoveredMonthIndex(null)}
-              >
-                <circle
-                  cx={pt.x}
-                  cy={pt.incY}
-                  r={hoveredMonthIndex === idx ? 6 : 4}
-                  fill={theme === 'dark' ? '#5FAF7A' : '#225A39'}
-                  className="chart-dot"
-                />
-                <circle
-                  cx={pt.x}
-                  cy={pt.expY}
-                  r={hoveredMonthIndex === idx ? 6 : 4}
-                  fill="#C26D40"
-                  className="chart-dot"
-                />
-                <text x={pt.x} y="176" className="axis-label" textAnchor="middle">
-                  {pt.label}
-                </text>
+            {/* Month Dots and Axis Labels */}
+            {monthData.map((pt, idx) => {
+              const isHovered = hoveredMonthIndex === idx;
+              return (
+                <g key={pt.label}>
+                  {/* Income Dot */}
+                  {(activeSeries === 'all' || activeSeries === 'income') && (
+                    <g>
+                      {isHovered && (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.incY}
+                          r={10}
+                          fill={incomeColor}
+                          opacity={0.25}
+                          className="chart-dot-pulse"
+                        />
+                      )}
+                      <circle
+                        cx={pt.x}
+                        cy={pt.incY}
+                        r={isHovered ? 5.5 : 4}
+                        fill={incomeColor}
+                        stroke="#ffffff"
+                        strokeWidth={isHovered ? 2 : 0}
+                        className="chart-dot"
+                      />
+                    </g>
+                  )}
 
-                {/* Interactive Tooltip on hover */}
-                {hoveredMonthIndex === idx && (
-                  <g>
-                    <rect
-                      x={pt.x - 45}
-                      y={10}
-                      width="90"
-                      height="34"
-                      rx="6"
-                      fill={theme === 'dark' ? '#1f2430' : '#ffffff'}
-                      stroke="rgba(0,0,0,0.15)"
-                    />
-                    <text
-                      x={pt.x}
-                      y={23}
-                      fontSize="9"
-                      fontWeight="bold"
-                      fill={theme === 'dark' ? '#5FAF7A' : '#225A39'}
-                      textAnchor="middle"
-                    >
-                      Inc: €{pt.income}
-                    </text>
-                    <text
-                      x={pt.x}
-                      y={36}
-                      fontSize="9"
-                      fontWeight="bold"
-                      fill="#C26D40"
-                      textAnchor="middle"
-                    >
-                      Exp: €{pt.expense}
-                    </text>
-                  </g>
-                )}
-              </g>
-            ))}
+                  {/* Expense Dot */}
+                  {(activeSeries === 'all' || activeSeries === 'expense') && (
+                    <g>
+                      {isHovered && (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.expY}
+                          r={10}
+                          fill={expenseColor}
+                          opacity={0.25}
+                          className="chart-dot-pulse"
+                        />
+                      )}
+                      <circle
+                        cx={pt.x}
+                        cy={pt.expY}
+                        r={isHovered ? 5.5 : 4}
+                        fill={expenseColor}
+                        stroke="#ffffff"
+                        strokeWidth={isHovered ? 2 : 0}
+                        className="chart-dot"
+                      />
+                    </g>
+                  )}
+
+                  {/* X Axis Label */}
+                  <text
+                    x={pt.x}
+                    y="176"
+                    className={`axis-label ${isHovered ? 'axis-label-active' : ''}`}
+                    textAnchor="middle"
+                    fontWeight={isHovered ? '700' : '500'}
+                    fill={isHovered ? (theme === 'dark' ? '#f0f4f2' : '#1a221e') : undefined}
+                  >
+                    {pt.label}
+                  </text>
+
+                  {/* Wide Hitzone rectangle for super smooth hover detection */}
+                  <rect
+                    x={pt.x - 35}
+                    y="15"
+                    width="70"
+                    height="155"
+                    fill="transparent"
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredMonthIndex(idx)}
+                    onMouseLeave={() => setHoveredMonthIndex(null)}
+                  />
+                </g>
+              );
+            })}
+
+            {/* Interactive Floating Tooltip */}
+            {hoveredMonthIndex !== null && (() => {
+              const pt = monthData[hoveredMonthIndex];
+              const tooltipWidth = 114;
+              const tooltipHeight = 52;
+              let tooltipX = pt.x - tooltipWidth / 2;
+              if (tooltipX < 10) tooltipX = 10;
+              if (tooltipX + tooltipWidth > 490) tooltipX = 490 - tooltipWidth;
+              const tooltipY = 10;
+
+              const net = pt.income - pt.expense;
+
+              return (
+                <g filter="url(#tooltipShadow)" style={{ pointerEvents: 'none' }}>
+                  <rect
+                    x={tooltipX}
+                    y={tooltipY}
+                    width={tooltipWidth}
+                    height={tooltipHeight}
+                    rx="8"
+                    fill={theme === 'dark' ? '#1b221d' : '#ffffff'}
+                    stroke={theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
+                    strokeWidth="1"
+                  />
+                  {/* Tooltip Header: Month & Net */}
+                  <text
+                    x={tooltipX + 8}
+                    y={tooltipY + 15}
+                    fontSize="9.5"
+                    fontWeight="700"
+                    fill={theme === 'dark' ? '#e2e8e4' : '#2d3732'}
+                  >
+                    {pt.label}
+                  </text>
+                  <text
+                    x={tooltipX + tooltipWidth - 8}
+                    y={tooltipY + 15}
+                    fontSize="8.5"
+                    fontWeight="600"
+                    fill={net >= 0 ? (theme === 'dark' ? '#5FAF7A' : '#225A39') : '#C26D40'}
+                    textAnchor="end"
+                  >
+                    {net >= 0 ? `+€${net.toLocaleString()}` : `-€${Math.abs(net).toLocaleString()}`}
+                  </text>
+
+                  {/* Tooltip Income Row */}
+                  <circle cx={tooltipX + 12} cy={tooltipY + 28} r="3" fill={incomeColor} />
+                  <text
+                    x={tooltipX + 19}
+                    y={tooltipY + 31}
+                    fontSize="8.5"
+                    fontWeight="500"
+                    fill={theme === 'dark' ? '#9eb3a6' : '#5a6860'}
+                  >
+                    Inc:
+                  </text>
+                  <text
+                    x={tooltipX + tooltipWidth - 8}
+                    y={tooltipY + 31}
+                    fontSize="8.5"
+                    fontWeight="700"
+                    fill={incomeColor}
+                    textAnchor="end"
+                  >
+                    €{pt.income.toLocaleString()}
+                  </text>
+
+                  {/* Tooltip Expense Row */}
+                  <circle cx={tooltipX + 12} cy={tooltipY + 41} r="3" fill={expenseColor} />
+                  <text
+                    x={tooltipX + 19}
+                    y={tooltipY + 44}
+                    fontSize="8.5"
+                    fontWeight="500"
+                    fill={theme === 'dark' ? '#9eb3a6' : '#5a6860'}
+                  >
+                    Exp:
+                  </text>
+                  <text
+                    x={tooltipX + tooltipWidth - 8}
+                    y={tooltipY + 44}
+                    fontSize="8.5"
+                    fontWeight="700"
+                    fill={expenseColor}
+                    textAnchor="end"
+                  >
+                    €{pt.expense.toLocaleString()}
+                  </text>
+                </g>
+              );
+            })()}
           </svg>
         </div>
 
-        {/* Legend */}
+        {/* Legend with active toggle filters */}
         <div className="chart-legend">
-          <div className="legend-item">
-            <span className="legend-dot income-dot"></span>
+          <button
+            className={`legend-item-btn ${activeSeries === 'income' ? 'active' : ''} ${activeSeries === 'expense' ? 'dimmed' : ''}`}
+            onClick={() => setActiveSeries(activeSeries === 'income' ? 'all' : 'income')}
+            title="Click to toggle Income focus"
+          >
+            <span className="legend-dot income-dot" style={{ backgroundColor: incomeColor }}></span>
             <span>Income</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-dot expense-dot"></span>
+          </button>
+          <button
+            className={`legend-item-btn ${activeSeries === 'expense' ? 'active' : ''} ${activeSeries === 'income' ? 'dimmed' : ''}`}
+            onClick={() => setActiveSeries(activeSeries === 'expense' ? 'all' : 'expense')}
+            title="Click to toggle Expense focus"
+          >
+            <span className="legend-dot expense-dot" style={{ backgroundColor: expenseColor }}></span>
             <span>Expense</span>
-          </div>
+          </button>
         </div>
       </div>
 
