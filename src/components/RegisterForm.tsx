@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
-import { GoogleAuthModal } from './GoogleAuthModal';
+import {
+  auth,
+  googleProvider,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInWithPopup,
+} from '../lib/firebase';
 import { UserProfile } from './LoginForm';
 
 interface RegisterFormProps {
@@ -20,27 +25,67 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const {
-    isGoogleLoading,
-    isModalOpen,
-    triggerGoogleLogin,
-    closeModal,
-    handleSelectAccount,
-  } = useGoogleAuth({
-    onSuccess: onRegisterSuccess,
-    onError: onErrorMsg,
-  });
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      onRegisterSuccess({
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        avatar: user.photoURL || undefined,
+        uid: user.uid,
+      });
+    } catch (error: any) {
+      console.error('Google Sign In Error:', error);
+      let msg = 'Failed to sign in with Google.';
+      if (error.code === 'auth/popup-closed-by-user') {
+        msg = 'Google sign-in window was closed.';
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        msg = 'Google sign-in attempt was cancelled.';
+      } else if (error.message) {
+        msg = error.message;
+      }
+      if (onErrorMsg) onErrorMsg(msg);
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) return;
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, { displayName: name });
+      }
+      onRegisterSuccess({
+        name: name,
+        email: userCredential.user.email || email,
+        avatar: userCredential.user.photoURL || undefined,
+        uid: userCredential.user.uid,
+      });
+    } catch (error: any) {
+      console.error('Registration Error:', error);
+      let msg = 'Failed to create account.';
+      if (error.code === 'auth/email-already-in-use') {
+        msg = 'An account with this email already exists.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Invalid email address format.';
+      } else if (error.code === 'auth/weak-password') {
+        msg = 'Password should be at least 6 characters.';
+      } else if (error.message) {
+        msg = error.message;
+      }
+      if (onErrorMsg) onErrorMsg(msg);
+    } finally {
       setIsLoading(false);
-      onRegisterSuccess({ name, email });
-    }, 600);
+    }
   };
 
   return (
@@ -55,7 +100,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       <button
         type="button"
         className="btn-google"
-        onClick={triggerGoogleLogin}
+        onClick={handleGoogleSignIn}
         disabled={isLoading || isGoogleLoading}
       >
         <svg width="18" height="18" viewBox="0 0 24 24">
@@ -167,15 +212,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           Sign in
         </span>
       </div>
-
-      {/* Fallback Google Auth Modal */}
-      <GoogleAuthModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onSelectAccount={handleSelectAccount}
-      />
     </div>
   );
 };
-
-
