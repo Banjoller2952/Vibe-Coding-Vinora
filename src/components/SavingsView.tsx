@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Plus, Calendar, X, Trash2 } from 'lucide-react';
+import { NewGoalModal } from './NewGoalModal';
 
 export interface SavingsGoal {
   id: string;
   title: string;
   subtitle?: string;
+  note?: string;
   category: string;
   categoryDotColor?: string;
   targetDate?: string;
@@ -57,51 +59,17 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
   const [contributeGoal, setContributeGoal] = useState<SavingsGoal | null>(null);
   const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null);
 
-  // Form State for New Goal
-  const [newTitle, setNewTitle] = useState('');
-  const [newSubtitle, setNewSubtitle] = useState('');
-  const [newCategory, setNewCategory] = useState('Travel');
-  const [newTargetDate, setNewTargetDate] = useState('Dec 2026');
-  const [newCurrentAmount, setNewCurrentAmount] = useState('');
-  const [newTargetAmount, setNewTargetAmount] = useState('');
-
   // Contribute state
   const [contributionAmount, setContributionAmount] = useState('');
 
-  const handleCreateGoal = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle || !newTargetAmount) return;
-
-    const targetVal = parseFloat(newTargetAmount) || 1000;
-    const currentVal = parseFloat(newCurrentAmount) || 0;
-
-    const dotColors: Record<string, string> = {
-      Travel: '#36b37e',
-      Gear: '#c26d40',
-      'Safety net': '#225a39',
-      Life: '#3b82f6',
-      Vehicle: '#eab308',
-    };
-
+  const handleAddNewGoal = (goalData: Omit<SavingsGoal, 'id'>) => {
     const newGoalItem: SavingsGoal = {
       id: `goal-${Date.now()}`,
-      title: newTitle,
-      subtitle: newSubtitle,
-      category: newCategory,
-      categoryDotColor: dotColors[newCategory] || '#36b37e',
-      targetDate: newTargetDate,
-      currentAmount: currentVal,
-      targetAmount: targetVal,
-      isHero: false,
+      ...goalData,
+      isHero: goals.length === 0,
     };
 
-    setGoals([...goals, newGoalItem]);
-    setIsNewGoalModalOpen(false);
-    // Reset fields
-    setNewTitle('');
-    setNewSubtitle('');
-    setNewCurrentAmount('');
-    setNewTargetAmount('');
+    setGoals((prev) => [...prev, newGoalItem]);
   };
 
   const handleAddContribution = (e: React.FormEvent) => {
@@ -283,98 +251,11 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
       </div>
 
       {/* Modal: Create New Goal */}
-      {isNewGoalModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsNewGoalModalOpen(false)}>
-          <div className="modal-content-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Create new savings goal</h3>
-              <button className="btn-modal-close" onClick={() => setIsNewGoalModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateGoal} className="modal-form">
-              <div className="form-group">
-                <label>Goal Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. New Laptop, Paris Trip"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Subtitle / Description (optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. MacBook Pro M3, 2 weeks travel"
-                  value={newSubtitle}
-                  onChange={(e) => setNewSubtitle(e.target.value)}
-                />
-              </div>
-
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>Target Amount (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="2500.00"
-                    value={newTargetAmount}
-                    onChange={(e) => setNewTargetAmount(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Current Saved (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newCurrentAmount}
-                    onChange={(e) => setNewCurrentAmount(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>Category Tag</label>
-                  <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)}>
-                    <option value="Travel">Travel</option>
-                    <option value="Gear">Gear</option>
-                    <option value="Safety net">Safety net</option>
-                    <option value="Life">Life</option>
-                    <option value="Vehicle">Vehicle</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Target Date</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Dec 2026"
-                    value={newTargetDate}
-                    onChange={(e) => setNewTargetDate(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer-actions">
-                <button type="button" className="btn-modal-cancel" onClick={() => setIsNewGoalModalOpen(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-modal-submit">
-                  Create goal
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <NewGoalModal
+        isOpen={isNewGoalModalOpen}
+        onClose={() => setIsNewGoalModalOpen(false)}
+        onAddGoal={handleAddNewGoal}
+      />
 
       {/* Modal: Contribute to Goal */}
       {contributeGoal && (
