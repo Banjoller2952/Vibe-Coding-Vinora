@@ -202,6 +202,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setTransactions(transactions.filter((tx) => tx.id !== id));
   };
 
+  const handleRestoreTransaction = (tx: ExtendedTransactionItem) => {
+    setTransactions((prev) => [tx, ...prev]);
+  };
+
   const handleOpenEditModal = (tx: ExtendedTransactionItem) => {
     setEditingTransaction(tx);
     setIsLogModalOpen(true);
@@ -387,6 +391,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               onDeleteTransaction={handleDeleteTransaction}
               onEditTransaction={handleOpenEditModal}
               onUpdateTransactionColor={handleUpdateTransactionColor}
+              onRestoreTransaction={handleRestoreTransaction}
             />
           ) : activeTab === 'savings' ? (
             <SavingsView theme={theme} />

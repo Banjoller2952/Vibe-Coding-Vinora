@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -10,9 +10,9 @@ import {
 } from 'lucide-react';
 import { TransactionItem } from './LogTransactionModal';
 import { MoreFiltersModal, FilterState } from './MoreFiltersModal';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 export interface ExtendedTransactionItem extends TransactionItem {
-  note?: string;
   subtitle?: string;
   dateGroup?: string;
 }
@@ -23,6 +23,7 @@ interface TransactionsViewProps {
   onDeleteTransaction?: (id: string) => void;
   onEditTransaction?: (transaction: ExtendedTransactionItem) => void;
   onUpdateTransactionColor?: (id: string, color?: string) => void;
+  onRestoreTransaction?: (transaction: ExtendedTransactionItem) => void;
 }
 
 // Preset color palette for custom badge color selection matching Figma
@@ -59,6 +60,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   onDeleteTransaction,
   onEditTransaction,
   onUpdateTransactionColor,
+  onRestoreTransaction,
 }) => {
   const [filterTab, setFilterTab] = useState<'all' | 'income' | 'expense'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +73,44 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     fromDate: '',
     toDate: '',
   });
+
+  // Deletion Confirmation & Toast Undo State
+  const [deleteTxTarget, setDeleteTxTarget] = useState<ExtendedTransactionItem | null>(null);
+  const [deletedTx, setDeletedTx] = useState<ExtendedTransactionItem | null>(null);
+  const [txToast, setTxToast] = useState<{ title: string } | null>(null);
+
+  // Auto-dismiss transaction undo toast after 6 seconds
+  useEffect(() => {
+    if (txToast) {
+      const timer = setTimeout(() => {
+        setTxToast(null);
+        setDeletedTx(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [txToast]);
+
+  const handleOpenDeleteTx = (tx: ExtendedTransactionItem) => {
+    setDeleteTxTarget(tx);
+  };
+
+  const handleConfirmDeleteTx = () => {
+    if (deleteTxTarget) {
+      const target = deleteTxTarget;
+      if (onDeleteTransaction) onDeleteTransaction(target.id);
+      setDeletedTx(target);
+      setTxToast({ title: target.title });
+      setDeleteTxTarget(null);
+    }
+  };
+
+  const handleUndoDeleteTx = () => {
+    if (deletedTx && onRestoreTransaction) {
+      onRestoreTransaction(deletedTx);
+      setDeletedTx(null);
+      setTxToast(null);
+    }
+  };
 
   // Helper to format currency correctly
   const formatAmount = (num: number, includeSign = true) => {
@@ -410,7 +450,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                                 className="dropdown-item delete"
                                 onClick={() => {
                                   closeMenus();
-                                  onDeleteTransaction(item.id);
+                                  handleOpenDeleteTx(item);
                                 }}
                               >
                                 <Trash2 size={15} />
@@ -468,6 +508,30 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmModal
+        isOpen={Boolean(deleteTxTarget)}
+        itemTitle={deleteTxTarget?.title || ''}
+        itemType="transaction"
+        onClose={() => setDeleteTxTarget(null)}
+        onConfirmDelete={handleConfirmDeleteTx}
+      />
+
+      {/* Floating Toast Undo Notification Banner */}
+      {txToast && (
+        <div className="toast-undo-floating-wrapper">
+          <div className="toast-undo-banner">
+            <div className="toast-content-text">
+              <span className="toast-title">{txToast.title} removed.</span>
+              <span className="toast-sub">You can undo this right away.</span>
+            </div>
+            <button type="button" className="btn-toast-undo" onClick={handleUndoDeleteTx}>
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* PAGE FOOTER */}
       <footer className="tx-page-footer">

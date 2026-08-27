@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Plus, Trash2 } from 'lucide-react';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 export interface FilterState {
   category: string;
@@ -19,15 +20,15 @@ interface MoreFiltersModalProps {
 
 const DEFAULT_CATEGORIES: Record<string, { name: string; color: string }> = {
   Rent: { name: 'Rent', color: '#181d27' },
-  Transport: { name: 'Transport', color: '#b45309' },
-  Leisure: { name: 'Leisure', color: '#2563eb' },
-  Utilities: { name: 'Utilities', color: '#475569' },
-  Groceries: { name: 'Groceries', color: '#2e7d32' },
-  Cafés: { name: 'Cafés', color: '#c05621' },
-  Freelance: { name: 'Freelance', color: '#0d9488' },
-  Salary: { name: 'Salary', color: '#1b4d2e' },
-  'Dining out': { name: 'Dining out', color: '#d97706' },
-  Subscriptions: { name: 'Subscriptions', color: '#7c3aed' },
+  Transport: { name: 'Transport', color: '#d6a75c' },
+  Leisure: { name: 'Leisure', color: '#5b7cb8' },
+  Utilities: { name: 'Utilities', color: '#4a7885' },
+  Salary: { name: 'Salary', color: '#143d24' },
+  Freelance: { name: 'Freelance', color: '#0f766e' },
+  Shopping: { name: 'Shopping', color: '#c26d40' },
+  Health: { name: 'Health', color: '#bd6c45' },
+  Cafés: { name: 'Cafés', color: '#cf9e48' },
+  Groceries: { name: 'Groceries', color: '#1e2430' },
 };
 
 export const MoreFiltersModal: React.FC<MoreFiltersModalProps> = ({
@@ -50,17 +51,26 @@ export const MoreFiltersModal: React.FC<MoreFiltersModalProps> = ({
     'Transport',
     'Leisure',
     'Utilities',
-    'Groceries',
-    'Cafés',
-    'Freelance',
     'Salary',
+    'Freelance',
+    'Shopping',
+    'Health',
+    'Cafés',
+    'Groceries',
   ]);
 
-  // Suggested categories list (Default categories that are currently un-added)
+  // Suggested categories list
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([
-    'Dining out',
-    'Subscriptions',
+    'Travel',
+    'Gear',
+    'Safety net',
+    'Education',
+    'Car',
+    'Wedding',
+    'Retirement',
   ]);
+
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<string | null>(null);
 
   // Toast notification for category deletion
   const [toast, setToast] = useState<{ categoryName: string; isDefault: boolean } | null>(null);
@@ -100,9 +110,14 @@ export const MoreFiltersModal: React.FC<MoreFiltersModalProps> = ({
   if (!isOpen) return null;
 
   // Handle deleting a category
-  const handleDeleteCategory = (e: React.MouseEvent, catName: string) => {
+  const handleOpenDeleteCategory = (e: React.MouseEvent, catName: string) => {
     e.stopPropagation();
+    setDeleteConfirmTarget(catName);
+  };
 
+  const handleConfirmDeleteCategory = () => {
+    if (!deleteConfirmTarget) return;
+    const catName = deleteConfirmTarget;
     const isDefault = Boolean(DEFAULT_CATEGORIES[catName]);
 
     // 1. Remove from activeCategories
@@ -123,6 +138,8 @@ export const MoreFiltersModal: React.FC<MoreFiltersModalProps> = ({
     if (selectedCategory.toLowerCase() === catName.toLowerCase()) {
       setSelectedCategory('all');
     }
+
+    setDeleteConfirmTarget(null);
   };
 
   // Handle undoing a category deletion
@@ -166,7 +183,7 @@ export const MoreFiltersModal: React.FC<MoreFiltersModalProps> = ({
 
   // Filter category options based on search query
   const filteredCategoryOptions = activeCategories.filter((cat) =>
-    cat.toLowerCase().includes(categorySearch.toLowerCase().trim())
+    cat.toLowerCase() !== 'all categories' && cat.toLowerCase().includes(categorySearch.toLowerCase().trim())
   );
 
   const handleReset = () => {
@@ -277,7 +294,7 @@ export const MoreFiltersModal: React.FC<MoreFiltersModalProps> = ({
                         <button
                           className="cat-delete-btn"
                           title={`Delete ${cat}`}
-                          onClick={(e) => handleDeleteCategory(e, cat)}
+                          onClick={(e) => handleOpenDeleteCategory(e, cat)}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -390,6 +407,15 @@ export const MoreFiltersModal: React.FC<MoreFiltersModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmModal
+        isOpen={Boolean(deleteConfirmTarget)}
+        itemTitle={deleteConfirmTarget || ''}
+        itemType="category"
+        onClose={() => setDeleteConfirmTarget(null)}
+        onConfirmDelete={handleConfirmDeleteCategory}
+      />
     </div>
   );
 };

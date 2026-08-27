@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Check, Plus } from 'lucide-react';
+import { X, Search, Check, Plus, Trash2 } from 'lucide-react';
 import { SavingsGoal } from './SavingsView';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 export interface CategoryOption {
   id: string;
@@ -9,13 +10,23 @@ export interface CategoryOption {
 }
 
 const INITIAL_CATEGORIES: CategoryOption[] = [
-  { id: 'cat-all', name: 'All categories', color: '#9ca3af' },
+  { id: 'cat-all', name: 'All categories', color: '#b0b4b9' },
   { id: 'cat-rent', name: 'Rent', color: '#181d27' },
   { id: 'cat-transport', name: 'Transport', color: '#d6a75c' },
-  { id: 'cat-leisure', name: 'Leisure', color: '#3b82f6' },
+  { id: 'cat-leisure', name: 'Leisure', color: '#5b7cb8' },
+  { id: 'cat-utilities', name: 'Utilities', color: '#4a7885' },
+  { id: 'cat-salary', name: 'Salary', color: '#143d24' },
+  { id: 'cat-freelance', name: 'Freelance', color: '#0f766e' },
+  { id: 'cat-shopping', name: 'Shopping', color: '#c26d40' },
+  { id: 'cat-health', name: 'Health', color: '#bd6c45' },
+  { id: 'cat-cafes', name: 'Cafés', color: '#cf9e48' },
+  { id: 'cat-groceries', name: 'Groceries', color: '#1e2430' },
 ];
 
 const INITIAL_SUGGESTIONS: CategoryOption[] = [
+  { id: 'sug-travel', name: 'Travel', color: '#36b37e' },
+  { id: 'sug-gear', name: 'Gear', color: '#c26d40' },
+  { id: 'sug-safety', name: 'Safety net', color: '#225a39' },
   { id: 'sug-edu', name: 'Education', color: '#8b5cf6' },
   { id: 'sug-car', name: 'Car', color: '#ec4899' },
   { id: 'sug-wedding', name: 'Wedding', color: '#f43f5e' },
@@ -24,27 +35,37 @@ const INITIAL_SUGGESTIONS: CategoryOption[] = [
 
 const CATEGORY_COLOR_PALETTE = [
   '#36b37e', // Green / Travel
-  '#c26d40', // Orange / Gear
+  '#c26d40', // Orange / Shopping / Health / Gear
   '#225a39', // Forest Green / Safety net
-  '#3b82f6', // Blue / Leisure
+  '#5b7cb8', // Slate Blue / Leisure
+  '#4a7885', // Teal / Utilities
+  '#0f766e', // Emerald / Freelance
   '#8b5cf6', // Purple / Education
   '#ec4899', // Pink / Car
   '#f43f5e', // Rose / Wedding
-  '#10b981', // Emerald / Retirement
-  '#eab308', // Amber / Transport
+  '#10b981', // Mint / Retirement
+  '#d6a75c', // Mustard / Transport / Cafes
 ];
 
 interface NewGoalModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddGoal: (goal: Omit<SavingsGoal, 'id'>) => void;
+  onAddGoal?: (goal: Omit<SavingsGoal, 'id'>) => void;
+  onUpdateGoal?: (goal: SavingsGoal) => void;
+  onDeleteGoal?: (goalId: string) => void;
+  goalToEdit?: SavingsGoal | null;
 }
 
 export const NewGoalModal: React.FC<NewGoalModalProps> = ({
   isOpen,
   onClose,
   onAddGoal,
+  onUpdateGoal,
+  onDeleteGoal,
+  goalToEdit,
 }) => {
+  const isEditMode = Boolean(goalToEdit);
+
   const [name, setName] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [note, setNote] = useState('');
@@ -56,18 +77,61 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
   const [suggestions, setSuggestions] = useState<CategoryOption[]>(INITIAL_SUGGESTIONS);
   const [selectedCategory, setSelectedCategory] = useState<CategoryOption>(INITIAL_CATEGORIES[0]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Category deletion & toast undo state
+  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<CategoryOption | null>(null);
+  const [deletedCategory, setDeletedCategory] = useState<CategoryOption | null>(null);
+  const [categoryToast, setCategoryToast] = useState<{ title: string } | null>(null);
+
+  // Auto-dismiss category undo toast after 6 seconds
+  useEffect(() => {
+    if (categoryToast) {
+      const timer = setTimeout(() => {
+        setCategoryToast(null);
+        setDeletedCategory(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [categoryToast]);
 
   useEffect(() => {
     if (isOpen) {
-      setName('');
-      setTargetDate('');
-      setNote('');
-      setTargetAmount('');
-      setAlreadySaved('');
       setSearchQuery('');
-      setSelectedCategory(categories[0] || INITIAL_CATEGORIES[0]);
+      setIsDeleteConfirmOpen(false);
+      setDeleteCategoryTarget(null);
+      if (goalToEdit) {
+        setName(goalToEdit.title || '');
+        setTargetDate(goalToEdit.targetDate || '');
+        setNote(goalToEdit.subtitle || goalToEdit.note || '');
+        setTargetAmount(goalToEdit.targetAmount ? goalToEdit.targetAmount.toString() : '');
+        setAlreadySaved(goalToEdit.currentAmount !== undefined ? goalToEdit.currentAmount.toString() : '');
+
+        // Find or create category option
+        const existingCat = categories.find(
+          (c) => c.name.toLowerCase() === goalToEdit.category.toLowerCase()
+        );
+        if (existingCat) {
+          setSelectedCategory(existingCat);
+        } else {
+          const customCat: CategoryOption = {
+            id: `cat-${Date.now()}`,
+            name: goalToEdit.category,
+            color: goalToEdit.categoryDotColor || '#36b37e',
+          };
+          setCategories((prev) => [...prev, customCat]);
+          setSelectedCategory(customCat);
+        }
+      } else {
+        setName('');
+        setTargetDate('');
+        setNote('');
+        setTargetAmount('');
+        setAlreadySaved('');
+        setSelectedCategory(categories[0] || INITIAL_CATEGORIES[0]);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, goalToEdit]);
 
   if (!isOpen) return null;
 
@@ -84,14 +148,38 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
     setSelectedCategory(cat);
   };
 
+  const handleOpenDeleteCategory = (cat: CategoryOption, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteCategoryTarget(cat);
+  };
+
+  const handleConfirmDeleteCategory = () => {
+    if (deleteCategoryTarget) {
+      const catToDelete = deleteCategoryTarget;
+      setCategories((prev) => prev.filter((c) => c.id !== catToDelete.id));
+      setDeletedCategory(catToDelete);
+      setCategoryToast({ title: catToDelete.name });
+      setDeleteCategoryTarget(null);
+      if (selectedCategory.id === catToDelete.id) {
+        const remaining = categories.filter((c) => c.id !== catToDelete.id);
+        setSelectedCategory(remaining[0] || INITIAL_CATEGORIES[0]);
+      }
+    }
+  };
+
+  const handleUndoDeleteCategory = () => {
+    if (deletedCategory) {
+      setCategories((prev) => [...prev, deletedCategory]);
+      setDeletedCategory(null);
+      setCategoryToast(null);
+    }
+  };
+
   const handleAddSuggestedCategory = (sug: CategoryOption) => {
-    // Add to categories list if not already there
     if (!categories.some((c) => c.name.toLowerCase() === sug.name.toLowerCase())) {
       setCategories((prev) => [...prev, sug]);
     }
-    // Remove from suggestions
     setSuggestions((prev) => prev.filter((s) => s.id !== sug.id));
-    // Select it
     setSelectedCategory(sug);
   };
 
@@ -118,18 +206,46 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
     const targetVal = parseFloat(targetAmount) || 0;
     const savedVal = parseFloat(alreadySaved) || 0;
 
-    onAddGoal({
-      title: name.trim(),
-      subtitle: note.trim() || undefined,
-      note: note.trim() || undefined,
-      category: selectedCategory.name === 'All categories' ? 'General' : selectedCategory.name,
-      categoryDotColor: selectedCategory.color,
-      targetDate: targetDate.trim() || undefined,
-      currentAmount: savedVal,
-      targetAmount: targetVal,
-    });
+    const goalCategory = selectedCategory.name === 'All categories' ? 'General' : selectedCategory.name;
+
+    if (isEditMode && goalToEdit && onUpdateGoal) {
+      onUpdateGoal({
+        ...goalToEdit,
+        title: name.trim(),
+        subtitle: note.trim() || undefined,
+        note: note.trim() || undefined,
+        category: goalCategory,
+        categoryDotColor: selectedCategory.color,
+        targetDate: targetDate.trim() || undefined,
+        currentAmount: savedVal,
+        targetAmount: targetVal,
+      });
+    } else if (onAddGoal) {
+      onAddGoal({
+        title: name.trim(),
+        subtitle: note.trim() || undefined,
+        note: note.trim() || undefined,
+        category: goalCategory,
+        categoryDotColor: selectedCategory.color,
+        targetDate: targetDate.trim() || undefined,
+        currentAmount: savedVal,
+        targetAmount: targetVal,
+      });
+    }
 
     onClose();
+  };
+
+  const handleDelete = () => {
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (isEditMode && goalToEdit && onDeleteGoal) {
+      onDeleteGoal(goalToEdit.id);
+      setIsDeleteConfirmOpen(false);
+      onClose();
+    }
   };
 
   return (
@@ -138,7 +254,7 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
         {/* Header */}
         <div className="new-goal-header-row">
           <div className="new-goal-title-group">
-            <h2 className="new-goal-title">New goal</h2>
+            <h2 className="new-goal-title">{isEditMode ? 'Edit goal' : 'New goal'}</h2>
             <p className="new-goal-subtitle">
               Name it, set a target, and let the progress do the persuading.
             </p>
@@ -241,9 +357,8 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
                 {filteredCategories.map((cat) => {
                   const isSelected = selectedCategory.id === cat.id || selectedCategory.name === cat.name;
                   return (
-                    <button
+                    <div
                       key={cat.id}
-                      type="button"
                       className={`cat-item-btn ${isSelected ? 'selected' : ''}`}
                       onClick={() => handleSelectCategory(cat)}
                     >
@@ -254,8 +369,20 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
                         />
                         <span className="cat-item-name">{cat.name}</span>
                       </div>
-                      {isSelected && <Check size={16} className="cat-check-icon" />}
-                    </button>
+                      <div className="cat-item-right">
+                        {isSelected && <Check size={16} className="cat-check-icon" />}
+                        {cat.name.toLowerCase() !== 'all categories' && (
+                          <button
+                            type="button"
+                            className="cat-delete-btn"
+                            title={`Delete ${cat.name}`}
+                            onClick={(e) => handleOpenDeleteCategory(cat, e)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
 
@@ -297,20 +424,79 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="new-goal-footer-actions">
-            <button
-              type="button"
-              className="btn-new-goal-cancel"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button type="submit" className="btn-new-goal-submit">
-              Create goal
-            </button>
+          <div className={`new-goal-footer-actions ${isEditMode ? 'edit-mode' : ''}`}>
+            {isEditMode ? (
+              <>
+                <button
+                  type="button"
+                  className="btn-goal-delete"
+                  onClick={handleDelete}
+                >
+                  Delete
+                </button>
+                <div className="edit-right-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn-new-goal-cancel"
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-new-goal-submit">
+                    Save goal
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn-new-goal-cancel"
+                  onClick={onClose}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-new-goal-submit">
+                  Create goal
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>
+
+      {/* Goal Delete Confirmation Dialog */}
+      <DeleteConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        itemTitle={goalToEdit?.title || ''}
+        itemType="goal"
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirmDelete={handleConfirmDelete}
+      />
+
+      {/* Category Delete Confirmation Dialog */}
+      <DeleteConfirmModal
+        isOpen={Boolean(deleteCategoryTarget)}
+        itemTitle={deleteCategoryTarget?.name || ''}
+        itemType="category"
+        onClose={() => setDeleteCategoryTarget(null)}
+        onConfirmDelete={handleConfirmDeleteCategory}
+      />
+
+      {/* Category Delete Toast Undo Banner */}
+      {categoryToast && (
+        <div className="toast-undo-floating-wrapper">
+          <div className="toast-undo-banner">
+            <div className="toast-content-text">
+              <span className="toast-title">{categoryToast.title} removed.</span>
+              <span className="toast-sub">You can undo this right away.</span>
+            </div>
+            <button type="button" className="btn-toast-undo" onClick={handleUndoDeleteCategory}>
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

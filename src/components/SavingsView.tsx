@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Calendar, X, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Calendar, X } from 'lucide-react';
 import { NewGoalModal } from './NewGoalModal';
 
 export interface SavingsGoal {
@@ -62,6 +62,20 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
   // Contribute state
   const [contributionAmount, setContributionAmount] = useState('');
 
+  // Toast & Undo State
+  const [deletedGoal, setDeletedGoal] = useState<SavingsGoal | null>(null);
+  const [toast, setToast] = useState<{ title: string } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+        setDeletedGoal(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   const handleAddNewGoal = (goalData: Omit<SavingsGoal, 'id'>) => {
     const newGoalItem: SavingsGoal = {
       id: `goal-${Date.now()}`,
@@ -91,17 +105,27 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
     setContributionAmount('');
   };
 
-  const handleSaveEditGoal = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editGoal) return;
-
-    setGoals(goals.map((g) => (g.id === editGoal.id ? editGoal : g)));
+  const handleSaveEditGoal = (updatedGoal: SavingsGoal) => {
+    setGoals((prev) => prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g)));
     setEditGoal(null);
   };
 
   const handleDeleteGoal = (id: string) => {
-    setGoals(goals.filter((g) => g.id !== id));
+    const targetGoal = goals.find((g) => g.id === id);
+    if (targetGoal) {
+      setDeletedGoal(targetGoal);
+      setToast({ title: targetGoal.title });
+    }
+    setGoals((prev) => prev.filter((g) => g.id !== id));
     setEditGoal(null);
+  };
+
+  const handleUndoDelete = () => {
+    if (deletedGoal) {
+      setGoals((prev) => [...prev, deletedGoal]);
+      setDeletedGoal(null);
+      setToast(null);
+    }
   };
 
   // Separate hero goal and secondary goals
@@ -110,6 +134,20 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
 
   return (
     <div className="savings-view-container">
+      {/* Toast Undo Notification Banner */}
+      {toast && (
+        <div className="toast-undo-floating-wrapper">
+          <div className="toast-undo-banner">
+            <div className="toast-content-text">
+              <span className="toast-title">{toast.title} removed.</span>
+              <span className="toast-sub">You can undo this right away.</span>
+            </div>
+            <button type="button" className="btn-toast-undo" onClick={handleUndoDelete}>
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
       {/* Top Header Row */}
       <div className="savings-header">
         <div className="savings-header-text">
@@ -313,80 +351,13 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
       )}
 
       {/* Modal: Edit Goal */}
-      {editGoal && (
-        <div className="modal-backdrop" onClick={() => setEditGoal(null)}>
-          <div className="modal-content-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Edit savings goal</h3>
-              <button className="btn-modal-close" onClick={() => setEditGoal(null)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEditGoal} className="modal-form">
-              <div className="form-group">
-                <label>Goal Title</label>
-                <input
-                  type="text"
-                  value={editGoal.title}
-                  onChange={(e) => setEditGoal({ ...editGoal, title: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Subtitle</label>
-                <input
-                  type="text"
-                  value={editGoal.subtitle || ''}
-                  onChange={(e) => setEditGoal({ ...editGoal, subtitle: e.target.value })}
-                />
-              </div>
-
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>Current Saved (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={editGoal.currentAmount}
-                    onChange={(e) => setEditGoal({ ...editGoal, currentAmount: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Target Amount (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={editGoal.targetAmount}
-                    onChange={(e) => setEditGoal({ ...editGoal, targetAmount: parseFloat(e.target.value) || 1 })}
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer-actions edit-footer">
-                <button
-                  type="button"
-                  className="btn-modal-delete"
-                  onClick={() => handleDeleteGoal(editGoal.id)}
-                >
-                  <Trash2 size={15} />
-                  <span>Delete</span>
-                </button>
-                <div className="edit-right-actions">
-                  <button type="button" className="btn-modal-cancel" onClick={() => setEditGoal(null)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-modal-submit">
-                    Save changes
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <NewGoalModal
+        isOpen={Boolean(editGoal)}
+        goalToEdit={editGoal}
+        onClose={() => setEditGoal(null)}
+        onUpdateGoal={handleSaveEditGoal}
+        onDeleteGoal={handleDeleteGoal}
+      />
     </div>
   );
 };
