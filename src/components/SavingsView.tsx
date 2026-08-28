@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, X } from 'lucide-react';
 import { NewGoalModal } from './NewGoalModal';
+import { formatMoney } from '../lib/currency';
 
 export interface SavingsGoal {
   id: string;
@@ -16,7 +17,8 @@ export interface SavingsGoal {
 }
 
 interface SavingsViewProps {
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'system';
+  displayCurrency?: string;
 }
 
 const INITIAL_SAVINGS_GOALS: SavingsGoal[] = [
@@ -53,7 +55,7 @@ const INITIAL_SAVINGS_GOALS: SavingsGoal[] = [
   },
 ];
 
-export const SavingsView: React.FC<SavingsViewProps> = () => {
+export const SavingsView: React.FC<SavingsViewProps> = ({ displayCurrency = 'EUR' }) => {
   const [goals, setGoals] = useState<SavingsGoal[]>(INITIAL_SAVINGS_GOALS);
   const [isNewGoalModalOpen, setIsNewGoalModalOpen] = useState(false);
   const [contributeGoal, setContributeGoal] = useState<SavingsGoal | null>(null);
@@ -148,31 +150,27 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
           </div>
         </div>
       )}
-      {/* Top Header Row */}
-      <div className="savings-header">
-        <div className="savings-header-text">
-          <span className="savings-top-label">Toward Something</span>
-          <h1 className="savings-title">Savings goal</h1>
-          <p className="savings-subtitle">
-            A goal you can see is a goal you'll reach. Small contributions, calmy compounded.
-          </p>
+      {/* View Header */}
+      <div className="savings-header-row">
+        <div>
+          <h1 className="savings-title">Savings Goals</h1>
+          <p className="savings-subtitle">Track your targets, big and small.</p>
         </div>
-
         <button className="btn-new-goal" onClick={() => setIsNewGoalModalOpen(true)}>
-          <Plus size={18} />
+          <Plus size={16} />
           <span>New goal</span>
         </button>
       </div>
 
-      {/* Main Hero Card (Kyoto / Top Goal) */}
+      {/* HERO GOAL CARD */}
       {heroGoal && (() => {
         const pct = Math.min(100, Math.round((heroGoal.currentAmount / heroGoal.targetAmount) * 100));
         const remaining = Math.max(0, heroGoal.targetAmount - heroGoal.currentAmount);
 
         return (
-          <div className="savings-hero-card">
+          <div className="hero-goal-card">
             <div className="hero-card-header">
-              <div className="hero-title-group">
+              <div>
                 <h2 className="hero-goal-title">{heroGoal.title}</h2>
                 {heroGoal.subtitle && <p className="hero-goal-subtitle">{heroGoal.subtitle}</p>}
               </div>
@@ -194,10 +192,10 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
             <div className="hero-amount-section">
               <div className="hero-amount-row">
                 <span className="hero-big-amount">
-                  €{heroGoal.currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatMoney(heroGoal.currentAmount, displayCurrency)}
                 </span>
                 <span className="hero-target-amount">
-                  of €{heroGoal.targetAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  of {formatMoney(heroGoal.targetAmount, displayCurrency)}
                 </span>
               </div>
 
@@ -208,7 +206,7 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
               <div className="hero-meta-row">
                 <span>{pct}% saved</span>
                 <span>
-                  €{remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to go
+                  {formatMoney(remaining, displayCurrency)} to go
                 </span>
               </div>
             </div>
@@ -256,10 +254,10 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
               <div className="grid-amount-section">
                 <div className="grid-amount-row">
                   <span className="grid-big-amount">
-                    €{goal.currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatMoney(goal.currentAmount, displayCurrency)}
                   </span>
                   <span className="grid-target-amount">
-                    of €{goal.targetAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    of {formatMoney(goal.targetAmount, displayCurrency)}
                   </span>
                 </div>
 
@@ -270,7 +268,7 @@ export const SavingsView: React.FC<SavingsViewProps> = () => {
                 <div className="grid-meta-row">
                   <span>{pct}% saved</span>
                   <span>
-                    €{remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to go
+                    {formatMoney(remaining, displayCurrency)} to go
                   </span>
                 </div>
               </div>

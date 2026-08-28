@@ -11,6 +11,7 @@ import {
 import { TransactionItem } from './LogTransactionModal';
 import { MoreFiltersModal, FilterState } from './MoreFiltersModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { formatMoney } from '../lib/currency';
 
 export interface ExtendedTransactionItem extends TransactionItem {
   subtitle?: string;
@@ -24,6 +25,7 @@ interface TransactionsViewProps {
   onEditTransaction?: (transaction: ExtendedTransactionItem) => void;
   onUpdateTransactionColor?: (id: string, color?: string) => void;
   onRestoreTransaction?: (transaction: ExtendedTransactionItem) => void;
+  displayCurrency?: string;
 }
 
 // Preset color palette for custom badge color selection matching Figma
@@ -61,6 +63,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   onEditTransaction,
   onUpdateTransactionColor,
   onRestoreTransaction,
+  displayCurrency = 'EUR',
 }) => {
   const [filterTab, setFilterTab] = useState<'all' | 'income' | 'expense'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,14 +117,14 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
 
   // Helper to format currency correctly
   const formatAmount = (num: number, includeSign = true) => {
-    const isNegative = num < 0;
-    const absVal = Math.abs(num).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-    if (!includeSign) return `€${absVal}`;
-    return isNegative ? `-€${absVal}` : `+€${absVal}`;
+    const formatted = formatMoney(num, displayCurrency);
+    if (!includeSign && formatted.startsWith('-')) {
+      return formatted.slice(1);
+    }
+    if (includeSign && num > 0 && !formatted.startsWith('+')) {
+      return `+${formatted}`;
+    }
+    return formatted;
   };
 
   // Extract unique categories for filter dropdown

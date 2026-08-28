@@ -5,13 +5,18 @@ import { UserProfile } from './components/LoginForm';
 import { auth, onAuthStateChanged, signOut } from './lib/firebase';
 
 export function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'system') {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -32,7 +37,7 @@ export function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleToggleTheme = (newTheme: 'light' | 'dark') => {
+  const handleToggleTheme = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
   };
 

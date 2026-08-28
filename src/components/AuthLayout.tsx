@@ -6,9 +6,9 @@ import { ThemeToggle } from './ThemeToggle';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface AuthLayoutProps {
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'system';
   authMode: 'login' | 'register';
-  onToggleTheme: (theme: 'light' | 'dark') => void;
+  onToggleTheme: (theme: 'light' | 'dark' | 'system') => void;
   onToggleAuthMode: (mode: 'login' | 'register') => void;
   onLoginSuccess: (user: UserProfile) => void;
 }

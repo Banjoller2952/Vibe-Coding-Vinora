@@ -20,11 +20,12 @@ import { TransactionsView, ExtendedTransactionItem } from './TransactionsView';
 import { DashboardView } from './DashboardView';
 import { SavingsView } from './SavingsView';
 import { ReportsView } from './ReportsView';
+import { SettingsView } from './SettingsView';
 
 interface DashboardLayoutProps {
   user: UserProfile;
-  theme: 'light' | 'dark';
-  onToggleTheme: (theme: 'light' | 'dark') => void;
+  theme: 'light' | 'dark' | 'system';
+  onToggleTheme: (theme: 'light' | 'dark' | 'system') => void;
   onSignOut: () => void;
 }
 
@@ -175,6 +176,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<ExtendedTransactionItem | null>(null);
   const [transactions, setTransactions] = useState<ExtendedTransactionItem[]>(INITIAL_TRANSACTIONS);
+
+  // Global Currency Preferences State
+  const [displayCurrency, setDisplayCurrency] = useState<string>('EUR');
+  const [convertCurrency, setConvertCurrency] = useState<string>('IDR');
 
   // Compute available balance from base 10807.51 + any new added transactions
   const totalAddedAmount = transactions.slice(INITIAL_TRANSACTIONS.length).reduce((sum, item) => sum + item.amount, 0);
@@ -355,17 +360,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             )}
           </div>
 
-          {/* Theme Switcher & Collapse button */}
+          {/* Collapse button */}
           <div className="sidebar-action-row">
-            <button
-              className="dash-theme-btn"
-              onClick={() => onToggleTheme(theme === 'light' ? 'dark' : 'light')}
-              title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
-            >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-              {(!isSidebarCollapsed || isMobileMenuOpen) && <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
-            </button>
-
             <button
               className="dash-collapse-btn"
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -392,20 +388,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               onEditTransaction={handleOpenEditModal}
               onUpdateTransactionColor={handleUpdateTransactionColor}
               onRestoreTransaction={handleRestoreTransaction}
+              displayCurrency={displayCurrency}
             />
           ) : activeTab === 'savings' ? (
-            <SavingsView theme={theme} />
+            <SavingsView theme={theme} displayCurrency={displayCurrency} />
           ) : activeTab === 'reports' ? (
-            <ReportsView theme={theme} />
-          ) : activeTab !== 'dashboard' ? (
-            /* Tab Placeholder Views */
-            <div className="tab-placeholder-card">
-              <h2>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h2>
-              <p>You are viewing the {activeTab} panel in Vinora. Content loads seamlessly.</p>
-              <button className="btn-primary-small" onClick={() => setActiveTab('dashboard')}>
-                Return to Dashboard
-              </button>
-            </div>
+            <ReportsView theme={theme} displayCurrency={displayCurrency} />
+          ) : activeTab === 'settings' ? (
+            <SettingsView
+              theme={theme}
+              onToggleTheme={onToggleTheme}
+              displayCurrency={displayCurrency}
+              setDisplayCurrency={setDisplayCurrency}
+              convertCurrency={convertCurrency}
+              setConvertCurrency={setConvertCurrency}
+            />
           ) : (
             /* Main Dashboard View */
             <DashboardView
@@ -415,6 +412,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               currentBalance={currentBalance}
               onOpenLogModal={() => setIsLogModalOpen(true)}
               onNavigateTab={(tab) => setActiveTab(tab)}
+              displayCurrency={displayCurrency}
             />
           )}
 
@@ -440,6 +438,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         onAddTransaction={handleAddTransaction}
         initialData={editingTransaction}
         onEditTransaction={handleEditTransaction}
+        displayCurrency={displayCurrency}
       />
     </div>
   );

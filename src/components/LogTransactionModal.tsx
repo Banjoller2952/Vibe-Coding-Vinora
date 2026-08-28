@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Search, Check, Plus, Trash2, Calendar, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Search, Check, Plus, Trash2, Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { CURRENCIES } from '../lib/currency';
 
 export interface TransactionItem {
   id: string;
@@ -76,7 +77,18 @@ interface LogTransactionModalProps {
   onAddTransaction: (transaction: Omit<TransactionItem, 'id'>) => void;
   initialData?: (TransactionItem & { note?: string; subtitle?: string; dateGroup?: string }) | null;
   onEditTransaction?: (transaction: TransactionItem & { note?: string; subtitle?: string; dateGroup?: string }) => void;
+  displayCurrency?: string;
 }
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const SHORT_MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
 
 export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
   isOpen,
@@ -84,15 +96,41 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
   onAddTransaction,
   initialData,
   onEditTransaction,
+  displayCurrency = 'EUR',
 }) => {
   const isEditMode = Boolean(initialData);
 
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('EUR');
+  const [currency, setCurrency] = useState(displayCurrency);
   const [date, setDate] = useState('');
   const [note, setNote] = useState('');
+
+  // Custom Currency Dropdown & Date Picker Popover State
+  const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  const [pickerYear, setPickerYear] = useState(2026);
+  const [pickerMonth, setPickerMonth] = useState(6); // July (0-indexed 6)
+
+  const currencyDropdownRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  // Close popovers on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(e.target as Node)) {
+        setIsCurrencyDropdownOpen(false);
+      }
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setIsDatePickerOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Category state
   const [categories, setCategories] = useState<CategoryOption[]>(INITIAL_CATEGORIES);
@@ -127,6 +165,7 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
         setType(initialData.amount >= 0 ? 'income' : 'expense');
         setNote(initialData.note || 'Weekly shop');
         setDate(initialData.date || initialData.dateGroup || '22 Jul');
+        setCurrency(displayCurrency);
 
         // Find or set category option
         const existingCat = categories.find(
@@ -144,16 +183,16 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
           setSelectedCategory(customCat);
         }
       } else {
-        setTitle('Whole Foods');
-        setAmount('10');
+        setTitle('');
+        setAmount('');
         setType('expense');
-        setCurrency('EUR');
+        setCurrency(displayCurrency);
         setDate('');
         setNote('');
         setSelectedCategory(categories.find((c) => c.name === 'Groceries') || categories[0] || INITIAL_CATEGORIES[0]);
       }
     }
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, displayCurrency]);
 
   if (!isOpen) return null;
 
@@ -225,8 +264,10 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
     e.preventDefault();
     if (!title.trim() || !amount) return;
 
-    const numAmount = parseFloat(amount) || 0;
-    const finalAmount = type === 'expense' ? -Math.abs(numAmount) : Math.abs(numAmount);
+    const parsedVal = parseFloat(amount.replace(',', '.')) || 0;
+    const currRate = CURRENCIES[currency]?.rateToEUR || 1;
+    const amountInEUR = parsedVal / currRate;
+    const finalAmount = type === 'expense' ? -Math.abs(amountInEUR) : Math.abs(amountInEUR);
     const catName = selectedCategory.name === 'All categories' ? 'General' : selectedCategory.name;
     const badgeCode = CATEGORY_BADGE_MAP[catName] || catName.slice(0, 2).toUpperCase();
 
@@ -253,6 +294,36 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
 
     onClose();
   };
+
+  const currInfo = CURRENCIES[currency] || CURRENCIES[displayCurrency] || CURRENCIES.EUR;
+
+  // Calendar Helpers
+  const handlePrevMonth = () => {
+    if (pickerMonth === 0) {
+      setPickerMonth(11);
+      setPickerYear(pickerYear - 1);
+    } else {
+      setPickerMonth(pickerMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (pickerMonth === 11) {
+      setPickerMonth(0);
+      setPickerYear(pickerYear + 1);
+    } else {
+      setPickerMonth(pickerMonth + 1);
+    }
+  };
+
+  const handleSelectDateDay = (day: number) => {
+    const monthStr = SHORT_MONTHS[pickerMonth];
+    setDate(`${day} ${monthStr}`);
+    setIsDatePickerOpen(false);
+  };
+
+  const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(pickerYear, pickerMonth, 1).getDay();
 
   return (
     <div className="new-goal-modal-backdrop" onClick={onClose}>
@@ -309,25 +380,56 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
             <div className="new-goal-field">
               <label className="new-goal-label">Sale Amount</label>
               <div className="amount-input-wrapper">
-                <span className="amount-currency-prefix">€</span>
+                <span className="amount-currency-prefix">{currInfo.symbol}</span>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
                   className="amount-number-input"
                   placeholder="10"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   required
                 />
-                <div className="amount-currency-select-badge">
-                  <span>{currency}</span>
-                  <ChevronDown size={14} />
+                <div className="amount-currency-select-container" ref={currencyDropdownRef}>
+                  <button
+                    type="button"
+                    className={`amount-currency-select-badge ${isCurrencyDropdownOpen ? 'active' : ''}`}
+                    onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
+                  >
+                    <span>{currency}</span>
+                    <ChevronDown size={14} className={`currency-chevron ${isCurrencyDropdownOpen ? 'open' : ''}`} />
+                  </button>
+
+                  {isCurrencyDropdownOpen && (
+                    <div className="custom-currency-popover-menu">
+                      {Object.keys(CURRENCIES).map((cCode) => {
+                        const cItem = CURRENCIES[cCode];
+                        const isSelected = currency === cCode;
+                        return (
+                          <button
+                            key={cCode}
+                            type="button"
+                            className={`currency-option-row ${isSelected ? 'selected' : ''}`}
+                            onClick={() => {
+                              setCurrency(cCode);
+                              setIsCurrencyDropdownOpen(false);
+                            }}
+                          >
+                            <div className="currency-option-left">
+                              <span className="currency-option-code">{cCode}</span>
+                              <span className="currency-option-name">{cItem.name}</span>
+                            </div>
+                            <span className="currency-option-symbol">{cItem.symbol}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Date Column */}
-            <div className="new-goal-field">
+            <div className="new-goal-field" style={{ position: 'relative' }} ref={datePickerRef}>
               <label className="new-goal-label">Date</label>
               <div className="date-input-wrapper">
                 <input
@@ -337,8 +439,76 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                 />
-                {!date && <Calendar size={16} className="date-calendar-icon" />}
+                <button
+                  type="button"
+                  className="date-calendar-btn"
+                  onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                  title="Pick date from GUI Calendar"
+                  aria-label="Open Calendar GUI"
+                >
+                  <Calendar size={16} className="date-calendar-icon" />
+                </button>
               </div>
+
+              {isDatePickerOpen && (
+                <div className="custom-calendar-popover">
+                  <div className="calendar-popover-header">
+                    <button type="button" className="cal-nav-btn" onClick={handlePrevMonth}>
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="cal-month-title">
+                      {MONTH_NAMES[pickerMonth]} {pickerYear}
+                    </span>
+                    <button type="button" className="cal-nav-btn" onClick={handleNextMonth}>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+
+                  <div className="calendar-weekdays-grid">
+                    <span>Su</span>
+                    <span>Mo</span>
+                    <span>Tu</span>
+                    <span>We</span>
+                    <span>Th</span>
+                    <span>Fr</span>
+                    <span>Sa</span>
+                  </div>
+
+                  <div className="calendar-days-grid">
+                    {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
+                      <span key={`empty-${idx}`} className="cal-day-cell empty"></span>
+                    ))}
+                    {Array.from({ length: daysInMonth }).map((_, idx) => {
+                      const dayNum = idx + 1;
+                      const isSelected = date === `${dayNum} ${SHORT_MONTHS[pickerMonth]}`;
+                      return (
+                        <button
+                          key={`day-${dayNum}`}
+                          type="button"
+                          className={`cal-day-cell day-btn ${isSelected ? 'selected' : ''}`}
+                          onClick={() => handleSelectDateDay(dayNum)}
+                        >
+                          {dayNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="calendar-popover-footer">
+                    <button
+                      type="button"
+                      className="cal-btn-today"
+                      onClick={() => {
+                        const today = new Date();
+                        setDate(`${today.getDate()} ${SHORT_MONTHS[today.getMonth()]}`);
+                        setIsDatePickerOpen(false);
+                      }}
+                    >
+                      Today
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

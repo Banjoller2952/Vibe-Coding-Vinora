@@ -2,9 +2,9 @@ import React from 'react';
 import { Sun, Moon, LogIn, UserPlus } from 'lucide-react';
 
 interface ControlsProps {
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'system';
   authMode: 'login' | 'register';
-  onToggleTheme: (theme: 'light' | 'dark') => void;
+  onToggleTheme: (theme: 'light' | 'dark' | 'system') => void;
   onToggleAuthMode: (mode: 'login' | 'register') => void;
 }
 

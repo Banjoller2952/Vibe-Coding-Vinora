@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { formatMoney } from '../lib/currency';
 
 interface ReportsViewProps {
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'system';
+  displayCurrency?: string;
 }
 
 interface CategoryExpense {
@@ -28,7 +30,7 @@ const CATEGORY_EXPENSES: CategoryExpense[] = [
   { name: 'Cafés', amount: 9.95, color: '#c26d40' },
 ];
 
-export const ReportsView: React.FC<ReportsViewProps> = ({ theme }) => {
+export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency = 'EUR' }) => {
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
@@ -62,21 +64,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme }) => {
         <div className="reports-stat-card">
           <span className="stat-card-label">Income</span>
           <span className="stat-card-value">
-            €{currentIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatMoney(currentIncome, displayCurrency)}
           </span>
         </div>
 
         <div className="reports-stat-card">
           <span className="stat-card-label">Expenses</span>
           <span className="stat-card-value">
-            €{currentExpense.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatMoney(currentExpense, displayCurrency)}
           </span>
         </div>
 
         <div className="reports-stat-card">
           <span className="stat-card-label">Net saved</span>
           <span className="stat-card-value positive">
-            +€{netSaved.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            +{formatMoney(netSaved, displayCurrency)}
           </span>
         </div>
 

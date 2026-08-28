@@ -8,14 +8,16 @@ import {
 } from 'lucide-react';
 import { ExtendedTransactionItem, BADGE_COLOR_MAP } from './TransactionsView';
 import { UserProfile } from './LoginForm';
+import { formatMoney } from '../lib/currency';
 
 interface DashboardViewProps {
   user: UserProfile;
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'system';
   transactions: ExtendedTransactionItem[];
   currentBalance: number;
   onOpenLogModal: () => void;
   onNavigateTab: (tab: 'dashboard' | 'transactions' | 'savings' | 'reports' | 'settings') => void;
+  displayCurrency?: string;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -25,6 +27,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   currentBalance,
   onOpenLogModal,
   onNavigateTab,
+  displayCurrency = 'EUR',
 }) => {
   const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
   const [activeSeries, setActiveSeries] = useState<'all' | 'income' | 'expense'>('all');
@@ -151,11 +154,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="balance-sub">Available balance · 22 Jul 2026</span>
             <div className="balance-row">
               <h1 className="balance-amount">
-                €{currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatMoney(currentBalance, displayCurrency)}
               </h1>
               <div className="balance-badge">
                 <ArrowUpRight size={14} />
-                <span>+€2,386.96 this month</span>
+                <span>+{formatMoney(2386.96, displayCurrency)} this month</span>
               </div>
             </div>
           </div>
@@ -185,7 +188,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Wallet size={16} />
             </div>
           </div>
-          <div className="stat-amount">€3,870.00</div>
+          <div className="stat-amount">{formatMoney(3870, displayCurrency)}</div>
           <div className="stat-growth positive">+12% vs June</div>
         </div>
 
@@ -196,7 +199,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <TrendingUp size={16} />
             </div>
           </div>
-          <div className="stat-amount">€1,483.04</div>
+          <div className="stat-amount">{formatMoney(1483.04, displayCurrency)}</div>
           <div className="stat-growth negative">-8% vs June</div>
         </div>
       </div>
@@ -513,7 +516,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="cat-item">
             <div className="cat-header">
               <span className="cat-name">Rent</span>
-              <span className="cat-val">-€1,180.00</span>
+              <span className="cat-val">{formatMoney(-1180, displayCurrency)}</span>
             </div>
             <div className="progress-track">
               <div className="progress-bar bar-rent" style={{ width: '80%' }}></div>
@@ -523,7 +526,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="cat-item">
             <div className="cat-header">
               <span className="cat-name">Groceries</span>
-              <span className="cat-val">-€106.39</span>
+              <span className="cat-val">{formatMoney(-106.39, displayCurrency)}</span>
             </div>
             <div className="progress-track">
               <div className="progress-bar bar-groceries" style={{ width: '42%' }}></div>
@@ -533,7 +536,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="cat-item">
             <div className="cat-header">
               <span className="cat-name">Utilities</span>
-              <span className="cat-val">-€74.90</span>
+              <span className="cat-val">{formatMoney(-74.90, displayCurrency)}</span>
             </div>
             <div className="progress-track">
               <div className="progress-bar bar-utilities" style={{ width: '32%' }}></div>
@@ -543,7 +546,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="cat-item">
             <div className="cat-header">
               <span className="cat-name">Transport</span>
-              <span className="cat-val">-€68.90</span>
+              <span className="cat-val">{formatMoney(-68.90, displayCurrency)}</span>
             </div>
             <div className="progress-track">
               <div className="progress-bar bar-transport" style={{ width: '28%' }}></div>
@@ -553,7 +556,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="cat-item">
             <div className="cat-header">
               <span className="cat-name">Leisure</span>
-              <span className="cat-val">-€42.90</span>
+              <span className="cat-val">{formatMoney(-42.90, displayCurrency)}</span>
             </div>
             <div className="progress-track">
               <div className="progress-bar bar-leisure" style={{ width: '20%' }}></div>
@@ -589,7 +592,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                 </div>
                 <div className={`tx-amount ${tx.amount > 0 ? 'positive' : ''}`}>
-                  {tx.amount > 0 ? `+€${tx.amount.toFixed(2)}` : `-€${Math.abs(tx.amount).toFixed(2)}`}
+                  {tx.amount > 0 ? `+${formatMoney(tx.amount, displayCurrency)}` : formatMoney(tx.amount, displayCurrency)}
                 </div>
               </div>
             );
@@ -611,8 +614,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <div className="goal-amount-section">
           <div className="goal-amount-row">
-            <span className="goal-big-amount">€1,840.00</span>
-            <span className="goal-target-amount">of €3,200.00</span>
+            <span className="goal-big-amount">{formatMoney(1840, displayCurrency)}</span>
+            <span className="goal-target-amount">of {formatMoney(3200, displayCurrency)}</span>
           </div>
 
           <div className="goal-progress-track">
