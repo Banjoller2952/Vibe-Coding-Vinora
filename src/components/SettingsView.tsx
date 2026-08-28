@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sun, Moon, Laptop, RefreshCw } from 'lucide-react';
-import { CURRENCIES, formatMoney } from '../lib/currency';
+import { CURRENCIES, formatMoney, getRatesLastUpdatedText } from '../lib/currency';
 
 const CURRENCY_LIST = Object.values(CURRENCIES);
 
@@ -112,7 +112,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </span>
             </div>
             <p className="banner-timestamp">
-              Live rate · updated Fri, 28 Aug 2026 00:02:31 +0000
+              Live rate · {getRatesLastUpdatedText()}
             </p>
             <p className="banner-example">
               Example: {exampleFormattedStr} shows as {exampleConvertedStr}

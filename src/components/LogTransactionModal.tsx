@@ -111,8 +111,9 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  const [pickerYear, setPickerYear] = useState(2026);
-  const [pickerMonth, setPickerMonth] = useState(6); // July (0-indexed 6)
+  const todayDateObj = new Date();
+  const [pickerYear, setPickerYear] = useState(todayDateObj.getFullYear());
+  const [pickerMonth, setPickerMonth] = useState(todayDateObj.getMonth());
 
   const currencyDropdownRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -481,11 +482,16 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
                     {Array.from({ length: daysInMonth }).map((_, idx) => {
                       const dayNum = idx + 1;
                       const isSelected = date === `${dayNum} ${SHORT_MONTHS[pickerMonth]}`;
+                      const isToday =
+                        todayDateObj.getDate() === dayNum &&
+                        todayDateObj.getMonth() === pickerMonth &&
+                        todayDateObj.getFullYear() === pickerYear;
+
                       return (
                         <button
                           key={`day-${dayNum}`}
                           type="button"
-                          className={`cal-day-cell day-btn ${isSelected ? 'selected' : ''}`}
+                          className={`cal-day-cell day-btn ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''}`}
                           onClick={() => handleSelectDateDay(dayNum)}
                         >
                           {dayNum}

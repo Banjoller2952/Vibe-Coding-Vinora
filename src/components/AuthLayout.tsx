@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { BrandPanel } from './BrandPanel';
 import { LoginForm, UserProfile } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
-import { ThemeToggle } from './ThemeToggle';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface AuthLayoutProps {
@@ -48,12 +47,6 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
   return (
     <div className="vinora-layout" data-theme={theme}>
-      {/* Floating Controls Bar */}
-      <ThemeToggle
-        authMode={authMode}
-        onToggleAuthMode={onToggleAuthMode}
-      />
-
       {/* Left Brand / Quote Hero Section */}
       <BrandPanel />
 

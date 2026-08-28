@@ -5193,6 +5193,11 @@ button, input, select {
   color: #1e6d42;
 }
 
+.cal-day-cell.is-today {
+  border: 1px solid #1e6d42;
+  font-weight: 600;
+}
+
 .cal-day-cell.selected {
   background-color: #1e6d42;
   color: #ffffff !important;
