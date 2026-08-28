@@ -393,7 +393,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           ) : activeTab === 'savings' ? (
             <SavingsView theme={theme} displayCurrency={displayCurrency} />
           ) : activeTab === 'reports' ? (
-            <ReportsView theme={theme} displayCurrency={displayCurrency} />
+            <ReportsView theme={theme} displayCurrency={displayCurrency} transactions={transactions} />
           ) : activeTab === 'settings' ? (
             <SettingsView
               theme={theme}

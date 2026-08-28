@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Sparkles,
   Plus,
   ArrowUpRight,
+  ArrowDownRight,
   Wallet,
   TrendingUp,
 } from 'lucide-react';
@@ -32,6 +33,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
   const [activeSeries, setActiveSeries] = useState<'all' | 'income' | 'expense'>('all');
 
+  // Dynamic July income, expenses, net, and spending percentage
+  const julyIncome = useMemo(() => {
+    const addedIncome = transactions.reduce((sum, tx) => (tx.amount > 0 ? sum + tx.amount : sum), 0);
+    return 3870.0 + addedIncome;
+  }, [transactions]);
+
+  const julyExpenses = useMemo(() => {
+    const addedExpenses = transactions.reduce((sum, tx) => (tx.amount < 0 ? sum + Math.abs(tx.amount) : sum), 0);
+    return 1483.04 + addedExpenses;
+  }, [transactions]);
+
+  const julyNet = julyIncome - julyExpenses;
+  const spendingPct = Math.min(100, Math.round((julyExpenses / julyIncome) * 100));
+
+  const categoryTotals = useMemo(() => {
+    const map: Record<string, number> = {
+      Rent: 1180.0,
+      Groceries: 106.39,
+      Utilities: 74.9,
+      Transport: 68.9,
+      Leisure: 42.9,
+    };
+
+    transactions.forEach((tx) => {
+      if (tx.amount < 0) {
+        const cat = tx.category || 'Leisure';
+        map[cat] = (map[cat] || 0) + Math.abs(tx.amount);
+      }
+    });
+
+    return map;
+  }, [transactions]);
+
   // Six months of flow chart data
   const rawMonthData = [
     { label: 'Feb', income: 3100, expense: 2100, x: 60 },
@@ -39,18 +73,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     { label: 'Apr', income: 3400, expense: 2050, x: 220 },
     { label: 'May', income: 3850, expense: 2480, x: 300 },
     { label: 'Jun', income: 3450, expense: 2300, x: 380 },
-    { label: 'Jul', income: 3870, expense: 1483, x: 460 },
+    { label: 'Jul', income: julyIncome, expense: julyExpenses, x: 460 },
   ];
 
-  const yMax = 4000;
-  const topY = 20;
-  const bottomY = 160;
+  const maxVal = Math.max(...rawMonthData.flatMap((d) => [d.income, d.expense]), 1000);
+  const yMax = Math.ceil((maxVal * 1.15) / 1000) * 1000 || 4000;
+  const topY = 25;
+  const bottomY = 155;
   const chartHeight = bottomY - topY;
 
   const monthData = rawMonthData.map((pt) => ({
     ...pt,
-    incY: bottomY - (pt.income / yMax) * chartHeight,
-    expY: bottomY - (pt.expense / yMax) * chartHeight,
+    incY: Math.max(topY, Math.min(bottomY, bottomY - (pt.income / yMax) * chartHeight)),
+    expY: Math.max(topY, Math.min(bottomY, bottomY - (pt.expense / yMax) * chartHeight)),
   }));
 
   // Monotone Cubic Spline (Fritsch-Carlson) for smooth, natural curves without overshoot
@@ -156,15 +191,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h1 className="balance-amount">
                 {formatMoney(currentBalance, displayCurrency)}
               </h1>
-              <div className="balance-badge">
-                <ArrowUpRight size={14} />
-                <span>+{formatMoney(2386.96, displayCurrency)} this month</span>
+              <div className={`balance-badge ${julyNet >= 0 ? 'positive' : 'negative'}`}>
+                {julyNet >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                <span>{julyNet >= 0 ? '+' : ''}{formatMoney(julyNet, displayCurrency)} this month</span>
               </div>
             </div>
           </div>
 
           <p className="hero-insight-text">
-            You're spending 38% of what you earn this month. On this pace, you'll close July with a comfortable margin.
+            You're spending {spendingPct}% of what you earn this month. {spendingPct <= 50 ? "On this pace, you'll close July with a comfortable margin." : spendingPct <= 80 ? "On this pace, you're maintaining a moderate budget margin." : "Keep an eye on expenses as you approach your monthly income limit."}
           </p>
 
           <div className="hero-action-buttons">
@@ -188,7 +223,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Wallet size={16} />
             </div>
           </div>
-          <div className="stat-amount">{formatMoney(3870, displayCurrency)}</div>
+          <div className="stat-amount">{formatMoney(julyIncome, displayCurrency)}</div>
           <div className="stat-growth positive">+12% vs June</div>
         </div>
 
@@ -199,7 +234,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <TrendingUp size={16} />
             </div>
           </div>
-          <div className="stat-amount">{formatMoney(1483.04, displayCurrency)}</div>
+          <div className="stat-amount">{formatMoney(julyExpenses, displayCurrency)}</div>
           <div className="stat-growth negative">-8% vs June</div>
         </div>
       </div>
@@ -247,10 +282,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <line x1="40" y1="160" x2="480" y2="160" className="grid-line" />
 
             {/* Y Axis Labels */}
-            <text x="30" y="24" className="axis-label" textAnchor="end">4000</text>
-            <text x="30" y="59" className="axis-label" textAnchor="end">3000</text>
-            <text x="30" y="94" className="axis-label" textAnchor="end">2000</text>
-            <text x="30" y="129" className="axis-label" textAnchor="end">1000</text>
+            <text x="30" y="24" className="axis-label" textAnchor="end">{yMax}</text>
+            <text x="30" y="59" className="axis-label" textAnchor="end">{Math.round(yMax * 0.75)}</text>
+            <text x="30" y="94" className="axis-label" textAnchor="end">{Math.round(yMax * 0.5)}</text>
+            <text x="30" y="129" className="axis-label" textAnchor="end">{Math.round(yMax * 0.25)}</text>
             <text x="30" y="164" className="axis-label" textAnchor="end">0</text>
 
             {/* Vertical Guideline on Hover */}
@@ -306,61 +341,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               />
             )}
 
-            {/* Month Dots and Axis Labels */}
+            {/* Month X Axis Labels */}
             {monthData.map((pt, idx) => {
               const isHovered = hoveredMonthIndex === idx;
               return (
                 <g key={pt.label}>
-                  {/* Income Dot */}
-                  {(activeSeries === 'all' || activeSeries === 'income') && (
-                    <g>
-                      {isHovered && (
-                        <circle
-                          cx={pt.x}
-                          cy={pt.incY}
-                          r={10}
-                          fill={incomeColor}
-                          opacity={0.25}
-                          className="chart-dot-pulse"
-                        />
-                      )}
-                      <circle
-                        cx={pt.x}
-                        cy={pt.incY}
-                        r={isHovered ? 5.5 : 4}
-                        fill={incomeColor}
-                        stroke="#ffffff"
-                        strokeWidth={isHovered ? 2 : 0}
-                        className="chart-dot"
-                      />
-                    </g>
-                  )}
-
-                  {/* Expense Dot */}
-                  {(activeSeries === 'all' || activeSeries === 'expense') && (
-                    <g>
-                      {isHovered && (
-                        <circle
-                          cx={pt.x}
-                          cy={pt.expY}
-                          r={10}
-                          fill={expenseColor}
-                          opacity={0.25}
-                          className="chart-dot-pulse"
-                        />
-                      )}
-                      <circle
-                        cx={pt.x}
-                        cy={pt.expY}
-                        r={isHovered ? 5.5 : 4}
-                        fill={expenseColor}
-                        stroke="#ffffff"
-                        strokeWidth={isHovered ? 2 : 0}
-                        className="chart-dot"
-                      />
-                    </g>
-                  )}
-
                   {/* X Axis Label */}
                   <text
                     x={pt.x}
@@ -388,98 +373,93 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               );
             })}
 
-            {/* Interactive Floating Tooltip */}
+          </svg>
+
+          {/* HTML Overlay Tooltip & Dots for 100% geometrically round circle nodes */}
+          <div className="chart-html-dots-overlay">
+            {monthData.map((pt, idx) => {
+              const isHovered = hoveredMonthIndex === idx;
+              const leftPct = (pt.x / 500) * 100;
+              const incTopPct = (pt.incY / 180) * 100;
+              const expTopPct = (pt.expY / 180) * 100;
+
+              return (
+                <React.Fragment key={pt.label}>
+                  {(activeSeries === 'all' || activeSeries === 'income') && (
+                    <div
+                      className={`chart-html-dot ${isHovered ? 'hovered' : ''}`}
+                      style={{
+                        left: `${leftPct}%`,
+                        top: `${incTopPct}%`,
+                        backgroundColor: incomeColor,
+                      }}
+                      onMouseEnter={() => setHoveredMonthIndex(idx)}
+                      onMouseLeave={() => setHoveredMonthIndex(null)}
+                    />
+                  )}
+                  {(activeSeries === 'all' || activeSeries === 'expense') && (
+                    <div
+                      className={`chart-html-dot expense ${isHovered ? 'hovered' : ''}`}
+                      style={{
+                        left: `${leftPct}%`,
+                        top: `${expTopPct}%`,
+                        backgroundColor: expenseColor,
+                      }}
+                      onMouseEnter={() => setHoveredMonthIndex(idx)}
+                      onMouseLeave={() => setHoveredMonthIndex(null)}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+
+            {/* HTML Floating Tooltip Box */}
             {hoveredMonthIndex !== null && (() => {
               const pt = monthData[hoveredMonthIndex];
-              const tooltipWidth = 114;
-              const tooltipHeight = 52;
-              let tooltipX = pt.x - tooltipWidth / 2;
-              if (tooltipX < 10) tooltipX = 10;
-              if (tooltipX + tooltipWidth > 490) tooltipX = 490 - tooltipWidth;
-              const tooltipY = 10;
-
+              const leftPct = (pt.x / 500) * 100;
               const net = pt.income - pt.expense;
 
               return (
-                <g filter="url(#tooltipShadow)" style={{ pointerEvents: 'none' }}>
-                  <rect
-                    x={tooltipX}
-                    y={tooltipY}
-                    width={tooltipWidth}
-                    height={tooltipHeight}
-                    rx="8"
-                    fill={theme === 'dark' ? '#1b221d' : '#ffffff'}
-                    stroke={theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
-                    strokeWidth="1"
-                  />
-                  {/* Tooltip Header: Month & Net */}
-                  <text
-                    x={tooltipX + 8}
-                    y={tooltipY + 15}
-                    fontSize="9.5"
-                    fontWeight="700"
-                    fill={theme === 'dark' ? '#e2e8e4' : '#2d3732'}
-                  >
-                    {pt.label}
-                  </text>
-                  <text
-                    x={tooltipX + tooltipWidth - 8}
-                    y={tooltipY + 15}
-                    fontSize="8.5"
-                    fontWeight="600"
-                    fill={net >= 0 ? (theme === 'dark' ? '#5FAF7A' : '#225A39') : '#C26D40'}
-                    textAnchor="end"
-                  >
-                    {net >= 0 ? `+€${net.toLocaleString()}` : `-€${Math.abs(net).toLocaleString()}`}
-                  </text>
+                <div
+                  className="chart-html-tooltip-card"
+                  style={{
+                    left: `${Math.max(12, Math.min(88, leftPct))}%`,
+                  }}
+                >
+                  <div className="tooltip-header-row">
+                    <span className="tooltip-month-label">{pt.label}</span>
+                    <span className={`tooltip-net-val ${net >= 0 ? 'positive' : 'negative'}`}>
+                      {net >= 0 ? `+€${net.toLocaleString()}` : `-€${Math.abs(net).toLocaleString()}`}
+                    </span>
+                  </div>
 
-                  {/* Tooltip Income Row */}
-                  <circle cx={tooltipX + 12} cy={tooltipY + 28} r="3" fill={incomeColor} />
-                  <text
-                    x={tooltipX + 19}
-                    y={tooltipY + 31}
-                    fontSize="8.5"
-                    fontWeight="500"
-                    fill={theme === 'dark' ? '#9eb3a6' : '#5a6860'}
-                  >
-                    Inc:
-                  </text>
-                  <text
-                    x={tooltipX + tooltipWidth - 8}
-                    y={tooltipY + 31}
-                    fontSize="8.5"
-                    fontWeight="700"
-                    fill={incomeColor}
-                    textAnchor="end"
-                  >
-                    €{pt.income.toLocaleString()}
-                  </text>
+                  <div className="tooltip-data-row">
+                    <span className="tooltip-row-left">
+                      <svg width="8" height="8" viewBox="0 0 8 8" className="tooltip-legend-svg">
+                        <circle cx="4" cy="4" r="3.5" fill={incomeColor} />
+                      </svg>
+                      <span className="tooltip-row-label">Inc:</span>
+                    </span>
+                    <span className="tooltip-row-val" style={{ color: incomeColor }}>
+                      €{pt.income.toLocaleString()}
+                    </span>
+                  </div>
 
-                  {/* Tooltip Expense Row */}
-                  <circle cx={tooltipX + 12} cy={tooltipY + 41} r="3" fill={expenseColor} />
-                  <text
-                    x={tooltipX + 19}
-                    y={tooltipY + 44}
-                    fontSize="8.5"
-                    fontWeight="500"
-                    fill={theme === 'dark' ? '#9eb3a6' : '#5a6860'}
-                  >
-                    Exp:
-                  </text>
-                  <text
-                    x={tooltipX + tooltipWidth - 8}
-                    y={tooltipY + 44}
-                    fontSize="8.5"
-                    fontWeight="700"
-                    fill={expenseColor}
-                    textAnchor="end"
-                  >
-                    €{pt.expense.toLocaleString()}
-                  </text>
-                </g>
+                  <div className="tooltip-data-row">
+                    <span className="tooltip-row-left">
+                      <svg width="8" height="8" viewBox="0 0 8 8" className="tooltip-legend-svg">
+                        <circle cx="4" cy="4" r="3.5" fill={expenseColor} />
+                      </svg>
+                      <span className="tooltip-row-label">Exp:</span>
+                    </span>
+                    <span className="tooltip-row-val" style={{ color: expenseColor }}>
+                      €{pt.expense.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               );
             })()}
-          </svg>
+          </div>
         </div>
 
         {/* Legend with active toggle filters */}
@@ -513,55 +493,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div className="category-progress-list">
-          <div className="cat-item">
-            <div className="cat-header">
-              <span className="cat-name">Rent</span>
-              <span className="cat-val">{formatMoney(-1180, displayCurrency)}</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-bar bar-rent" style={{ width: '80%' }}></div>
-            </div>
-          </div>
+          {Object.entries(categoryTotals).map(([catName, val]) => {
+            const barPct = Math.min(100, Math.round((val / (julyExpenses || 1)) * 100));
+            const catColors: Record<string, string> = {
+              Rent: '#1a261f',
+              Groceries: '#2e7d32',
+              Utilities: '#3b827e',
+              Transport: '#d4a359',
+              Leisure: '#4a7bb0',
+            };
+            const barColor = catColors[catName] || '#5b7cb8';
 
-          <div className="cat-item">
-            <div className="cat-header">
-              <span className="cat-name">Groceries</span>
-              <span className="cat-val">{formatMoney(-106.39, displayCurrency)}</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-bar bar-groceries" style={{ width: '42%' }}></div>
-            </div>
-          </div>
-
-          <div className="cat-item">
-            <div className="cat-header">
-              <span className="cat-name">Utilities</span>
-              <span className="cat-val">{formatMoney(-74.90, displayCurrency)}</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-bar bar-utilities" style={{ width: '32%' }}></div>
-            </div>
-          </div>
-
-          <div className="cat-item">
-            <div className="cat-header">
-              <span className="cat-name">Transport</span>
-              <span className="cat-val">{formatMoney(-68.90, displayCurrency)}</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-bar bar-transport" style={{ width: '28%' }}></div>
-            </div>
-          </div>
-
-          <div className="cat-item">
-            <div className="cat-header">
-              <span className="cat-name">Leisure</span>
-              <span className="cat-val">{formatMoney(-42.90, displayCurrency)}</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-bar bar-leisure" style={{ width: '20%' }}></div>
-            </div>
-          </div>
+            return (
+              <div key={catName} className="cat-item">
+                <div className="cat-header">
+                  <span className="cat-name">{catName}</span>
+                  <span className="cat-val">{formatMoney(-val, displayCurrency)}</span>
+                </div>
+                <div className="progress-track">
+                  <div
+                    className="progress-bar"
+                    style={{ width: `${barPct}%`, backgroundColor: barColor, transition: 'width 0.3s ease' }}
+                  ></div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -24,10 +24,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const displayObj = CURRENCIES[displayCurrency] || CURRENCIES.EUR;
   const convertObj = CURRENCIES[convertCurrency] || CURRENCIES.IDR;
 
-  // Calculate live conversion rate
-  const formattedRate = (convertObj.rateToEUR / displayObj.rateToEUR).toLocaleString('en-US', {
-    maximumFractionDigits: 2,
-  });
+  // Calculate live conversion rate with float decimal precision
+  const rawRate = convertObj.rateToEUR / displayObj.rateToEUR;
+  let formattedRate: string;
+  if (rawRate === 0) {
+    formattedRate = '0';
+  } else if (Math.abs(rawRate) < 0.0001) {
+    formattedRate = rawRate.toFixed(6);
+  } else if (Math.abs(rawRate) < 0.01) {
+    formattedRate = rawRate.toFixed(4);
+  } else if (Math.abs(rawRate) < 100) {
+    formattedRate = rawRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  } else {
+    formattedRate = rawRate.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
 
   const exampleDisplayVal = 1240.5;
   const exampleFormattedStr = formatMoney(exampleDisplayVal, displayObj.code);

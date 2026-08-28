@@ -151,10 +151,13 @@ export const SavingsView: React.FC<SavingsViewProps> = ({ displayCurrency = 'EUR
         </div>
       )}
       {/* View Header */}
-      <div className="savings-header-row">
-        <div>
-          <h1 className="savings-title">Savings Goals</h1>
-          <p className="savings-subtitle">Track your targets, big and small.</p>
+      <div className="savings-header">
+        <div className="savings-header-text">
+          <span className="savings-top-label">Toward Something</span>
+          <h1 className="savings-title">Savings goal</h1>
+          <p className="savings-subtitle">
+            A goal you can see is a goal you'll reach. Small contributions, calmy compounded.
+          </p>
         </div>
         <button className="btn-new-goal" onClick={() => setIsNewGoalModalOpen(true)}>
           <Plus size={16} />
@@ -168,7 +171,7 @@ export const SavingsView: React.FC<SavingsViewProps> = ({ displayCurrency = 'EUR
         const remaining = Math.max(0, heroGoal.targetAmount - heroGoal.currentAmount);
 
         return (
-          <div className="hero-goal-card">
+          <div className="savings-hero-card">
             <div className="hero-card-header">
               <div>
                 <h2 className="hero-goal-title">{heroGoal.title}</h2>

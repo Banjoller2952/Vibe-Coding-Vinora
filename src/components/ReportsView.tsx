@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { formatMoney } from '../lib/currency';
+import { ExtendedTransactionItem } from './TransactionsView';
 
 interface ReportsViewProps {
   theme?: 'light' | 'dark' | 'system';
   displayCurrency?: string;
+  transactions?: ExtendedTransactionItem[];
 }
 
 interface CategoryExpense {
@@ -12,36 +14,76 @@ interface CategoryExpense {
   color: string;
 }
 
-const MONTHLY_DATA = [
+const BASE_MONTHLY_DATA = [
   { label: 'Feb', income: 3100, expense: 2100 },
   { label: 'Mar', income: 3350, expense: 2400 },
   { label: 'Apr', income: 3400, expense: 2050 },
   { label: 'May', income: 3850, expense: 2480 },
   { label: 'Jun', income: 3450, expense: 2300 },
-  { label: 'Jul', income: 3870, expense: 1483.04 },
 ];
 
-const CATEGORY_EXPENSES: CategoryExpense[] = [
-  { name: 'Rent', amount: 1180.0, color: '#1a261f' },
-  { name: 'Groceries', amount: 106.39, color: '#2e7d32' },
-  { name: 'Utilities', amount: 74.9, color: '#3b827e' },
-  { name: 'Transport', amount: 68.9, color: '#d4a359' },
-  { name: 'Leisure', amount: 42.9, color: '#4a7bb0' },
-  { name: 'Cafés', amount: 9.95, color: '#c26d40' },
-];
-
-export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency = 'EUR' }) => {
+export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency = 'EUR', transactions = [] }) => {
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
-  // Current Month (July) metrics
-  const currentIncome = 3870.0;
-  const currentExpense = 1483.04;
-  const netSaved = currentIncome - currentExpense; // 2386.96
-  const savingsRate = Math.round((netSaved / currentIncome) * 100); // 62%
+  // Current Month (July) metrics calculated dynamically
+  const currentIncome = useMemo(() => {
+    const added = transactions.reduce((sum, tx) => (tx.amount > 0 ? sum + tx.amount : sum), 0);
+    return 3870.0 + added;
+  }, [transactions]);
+
+  const currentExpense = useMemo(() => {
+    const added = transactions.reduce((sum, tx) => (tx.amount < 0 ? sum + Math.abs(tx.amount) : sum), 0);
+    return 1483.04 + added;
+  }, [transactions]);
+
+  const netSaved = currentIncome - currentExpense;
+  const savingsRate = currentIncome > 0 ? Math.round((netSaved / currentIncome) * 100) : 0;
+
+  const monthlyData = [
+    ...BASE_MONTHLY_DATA,
+    { label: 'Jul', income: currentIncome, expense: currentExpense },
+  ];
+
+  const categoryExpenses: CategoryExpense[] = useMemo(() => {
+    const map: Record<string, CategoryExpense> = {
+      Rent: { name: 'Rent', amount: 1180.0, color: '#1a261f' },
+      Groceries: { name: 'Groceries', amount: 106.39, color: '#2e7d32' },
+      Utilities: { name: 'Utilities', amount: 74.9, color: '#3b827e' },
+      Transport: { name: 'Transport', amount: 68.9, color: '#d4a359' },
+      Leisure: { name: 'Leisure', amount: 42.9, color: '#4a7bb0' },
+      Cafés: { name: 'Cafés', amount: 9.95, color: '#c26d40' },
+    };
+
+    transactions.forEach((tx) => {
+      if (tx.amount < 0) {
+        const cat = tx.category || 'Leisure';
+        if (map[cat]) {
+          map[cat].amount += Math.abs(tx.amount);
+        } else {
+          map[cat] = { name: cat, amount: Math.abs(tx.amount), color: '#5b7cb8' };
+        }
+      }
+    });
+
+    return Object.values(map);
+  }, [transactions]);
+
+  // Dynamic Y-axis scale calculation for Bar Chart
+  const yMax = useMemo(() => {
+    let maxVal = 0;
+    monthlyData.forEach((d) => {
+      if (d.income > maxVal) maxVal = d.income;
+      if (d.expense > maxVal) maxVal = d.expense;
+    });
+    if (maxVal === 0) return 4000;
+    const rawHeadroom = maxVal * 1.15;
+    const step = rawHeadroom > 5000 ? 2000 : 1000;
+    return Math.ceil(rawHeadroom / step) * step;
+  }, [monthlyData]);
 
   // Total Category Expense for Donut chart
-  const totalCategoryExpense = CATEGORY_EXPENSES.reduce((sum, item) => sum + item.amount, 0);
+  const totalCategoryExpense = categoryExpenses.reduce((sum, item) => sum + item.amount, 0);
 
   // Donut chart geometry (Radius R = 56, Circumference = 2 * PI * 56 = 351.86)
   const donutR = 56;
@@ -107,22 +149,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
               <line x1="45" y1="175" x2="480" y2="175" className="chart-grid-line" />
 
               {/* Y-Axis Labels */}
-              <text x="35" y="29" className="chart-axis-label" textAnchor="end">4000</text>
-              <text x="35" y="66.5" className="chart-axis-label" textAnchor="end">3000</text>
-              <text x="35" y="104" className="chart-axis-label" textAnchor="end">2000</text>
-              <text x="35" y="141.5" className="chart-axis-label" textAnchor="end">1000</text>
+              <text x="35" y="29" className="chart-axis-label" textAnchor="end">{yMax}</text>
+              <text x="35" y="66.5" className="chart-axis-label" textAnchor="end">{Math.round(yMax * 0.75)}</text>
+              <text x="35" y="104" className="chart-axis-label" textAnchor="end">{Math.round(yMax * 0.5)}</text>
+              <text x="35" y="141.5" className="chart-axis-label" textAnchor="end">{Math.round(yMax * 0.25)}</text>
               <text x="35" y="179" className="chart-axis-label" textAnchor="end">0</text>
 
               {/* Bars for Each Month */}
-              {MONTHLY_DATA.map((item, i) => {
+              {monthlyData.map((item, i) => {
                 const colX = 75 + i * 70;
-                const incHeight = (item.income / 4000) * 150;
-                const expHeight = (item.expense / 4000) * 150;
+                const incHeight = Math.min(150, Math.max(0, (item.income / yMax) * 150));
+                const expHeight = Math.min(150, Math.max(0, (item.expense / yMax) * 150));
 
                 const incY = 175 - incHeight;
                 const expY = 175 - expHeight;
 
                 const isHovered = hoveredBarIndex === i;
+                const topBarY = Math.min(incY, expY);
+                const tooltipY = Math.max(5, topBarY - 38);
 
                 return (
                   <g
@@ -165,28 +209,32 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
                     {isHovered && (
                       <g className="bar-tooltip-group" style={{ pointerEvents: 'none' }}>
                         <rect
-                          x={colX - 45}
-                          y={Math.min(incY, expY) - 38}
-                          width="96"
-                          height="32"
-                          rx="6"
+                          x={colX - 54}
+                          y={tooltipY}
+                          width="114"
+                          height="42"
+                          rx="8"
                           className="bar-tooltip-bg"
                         />
                         <text
-                          x={colX + 3}
-                          y={Math.min(incY, expY) - 24}
-                          className="bar-tooltip-inc"
-                          textAnchor="middle"
+                          x={colX - 44}
+                          y={tooltipY + 17}
+                          className="bar-tooltip-text inc"
+                          fontSize="10"
+                          fontWeight="600"
+                          fontFamily="Inter, system-ui, sans-serif"
                         >
-                          Inc: €{item.income}
+                          Inc: {formatMoney(item.income, displayCurrency)}
                         </text>
                         <text
-                          x={colX + 3}
-                          y={Math.min(incY, expY) - 12}
-                          className="bar-tooltip-exp"
-                          textAnchor="middle"
+                          x={colX - 44}
+                          y={tooltipY + 32}
+                          className="bar-tooltip-text exp"
+                          fontSize="10"
+                          fontWeight="600"
+                          fontFamily="Inter, system-ui, sans-serif"
                         >
-                          Exp: €{item.expense}
+                          Exp: {formatMoney(item.expense, displayCurrency)}
                         </text>
                       </g>
                     )}
@@ -209,9 +257,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
             <div className="donut-chart-wrapper">
               <svg viewBox="0 0 160 160" className="donut-chart-svg">
                 <g transform="rotate(-90 80 80)">
-                  {CATEGORY_EXPENSES.map((cat) => {
-                    const segmentLen = (cat.amount / totalCategoryExpense) * donutC;
-                    const strokeDash = `${segmentLen - 1.5} ${donutC - segmentLen + 1.5}`;
+                  {categoryExpenses.map((cat) => {
+                    const segmentLen = totalCategoryExpense > 0 ? (cat.amount / totalCategoryExpense) * donutC : 0;
+                    const strokeDash = `${Math.max(0, segmentLen - 1.5)} ${donutC - segmentLen + 1.5}`;
                     const strokeOffset = -accumulatedLength;
                     accumulatedLength += segmentLen;
 
@@ -244,7 +292,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
 
             {/* Category Legend List */}
             <div className="category-legend-list">
-              {CATEGORY_EXPENSES.map((cat) => {
+              {categoryExpenses.map((cat) => {
                 const isHovered = hoveredCategory === cat.name;
                 const dotColor = cat.name === 'Rent' && theme === 'dark' ? '#5faf7a' : cat.color;
 
@@ -260,7 +308,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
                       <span className="cat-legend-name">{cat.name}</span>
                     </div>
                     <span className="cat-legend-val">
-                      -€{cat.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {formatMoney(-cat.amount, displayCurrency)}
                     </span>
                   </div>
                 );
@@ -277,13 +325,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
         <div className="plain-words-grid">
           <div className="plain-word-col">
             <p>
-              You brought in <strong>€3,870.00</strong> and spent <strong>€1,483.04</strong> in July.
+              You brought in <strong>{formatMoney(currentIncome, displayCurrency)}</strong> and spent <strong>{formatMoney(currentExpense, displayCurrency)}</strong> in July.
             </p>
           </div>
 
           <div className="plain-word-col">
             <p>
-              That's a savings rate of <strong>62%</strong> — well above the 20% you'd need to reach your Kyoto goal on time.
+              That's a savings rate of <strong>{savingsRate}%</strong> — {savingsRate >= 20 ? "well above" : "below"} the 20% you'd need to reach your Kyoto goal on time.
             </p>
           </div>
 

@@ -18,7 +18,13 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="delete-confirm-overlay" onClick={onClose}>
+    <div
+      className="delete-confirm-overlay"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
       <div className="delete-confirm-card" onClick={(e) => e.stopPropagation()}>
         <h3 className="delete-confirm-title">Delete "{itemTitle}"?</h3>
         <p className="delete-confirm-subtitle">

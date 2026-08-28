@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Check, Plus, Trash2, Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { CURRENCIES } from '../lib/currency';
+import { getCategoryCustomColors, saveCategoryColor } from '../lib/categoryColors';
 
 export interface TransactionItem {
   id: string;
@@ -90,6 +91,21 @@ const SHORT_MONTHS = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
 
+export const COLOR_PALETTE_SWATCHES = [
+  '#1e6d42',
+  '#36b37e',
+  '#d6a75c',
+  '#c26d40',
+  '#d92d21',
+  '#5b7cb8',
+  '#0f766e',
+  '#8b5cf6',
+  '#ec4899',
+  '#181d27',
+  '#1b4d2e',
+  '#475569',
+];
+
 export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
   isOpen,
   onClose,
@@ -107,9 +123,61 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
   const [date, setDate] = useState('');
   const [note, setNote] = useState('');
 
-  // Custom Currency Dropdown & Date Picker Popover State
+  // Custom Currency Dropdown, Date Picker & Color Picker Popover State
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [colorPickerTarget, setColorPickerTarget] = useState<{ id: string; name: string; color: string } | null>(null);
+
+  // Draggable Popover State
+  const [popoverPos, setPopoverPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ mouseX: number; mouseY: number; popX: number; popY: number }>({
+    mouseX: 0,
+    mouseY: 0,
+    popX: 0,
+    popY: 0,
+  });
+
+  const handleMouseDownHeader = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      popX: popoverPos.x,
+      popY: popoverPos.y,
+    };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStartRef.current.mouseX;
+      const dy = e.clientY - dragStartRef.current.mouseY;
+      setPopoverPos({
+        x: dragStartRef.current.popX + dx,
+        y: dragStartRef.current.popY + dy,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (!colorPickerTarget) {
+      setPopoverPos({ x: 0, y: 0 });
+    }
+  }, [colorPickerTarget]);
 
   const todayDateObj = new Date();
   const [pickerYear, setPickerYear] = useState(todayDateObj.getFullYear());
@@ -138,6 +206,37 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
   const [suggestions, setSuggestions] = useState<CategoryOption[]>(INITIAL_SUGGESTIONS);
   const [selectedCategory, setSelectedCategory] = useState<CategoryOption>(INITIAL_CATEGORIES[10] || INITIAL_CATEGORIES[0]);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync category custom colors from localStorage / central store
+  const syncCustomColors = () => {
+    const customColors = getCategoryCustomColors();
+    setCategories((prev) =>
+      prev.map((c) => ({ ...c, color: customColors[c.name] || c.color }))
+    );
+    setSuggestions((prev) =>
+      prev.map((s) => ({ ...s, color: customColors[s.name] || s.color }))
+    );
+  };
+
+  useEffect(() => {
+    syncCustomColors();
+    const handleColorChange = () => syncCustomColors();
+    window.addEventListener('vinora_category_colors_changed', handleColorChange);
+    return () => window.removeEventListener('vinora_category_colors_changed', handleColorChange);
+  }, []);
+
+  const handleCategoryColorChange = (catId: string, catName: string, newColor: string) => {
+    saveCategoryColor(catName, newColor);
+    setCategories((prev) =>
+      prev.map((c) => (c.id === catId || c.name === catName ? { ...c, color: newColor } : c))
+    );
+    setSuggestions((prev) =>
+      prev.map((s) => (s.id === catId || s.name === catName ? { ...s, color: newColor } : s))
+    );
+    if (selectedCategory.id === catId || selectedCategory.name === catName) {
+      setSelectedCategory((prev) => ({ ...prev, color: newColor }));
+    }
+  };
 
   // Category deletion state
   const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<CategoryOption | null>(null);
@@ -551,10 +650,20 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
                       onClick={() => handleSelectCategory(cat)}
                     >
                       <div className="cat-item-left">
-                        <span
-                          className="cat-dot-indicator"
-                          style={{ backgroundColor: cat.color }}
-                        />
+                        <button
+                          type="button"
+                          className="cat-dot-color-wrapper"
+                          title={`Click to change color for ${cat.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setColorPickerTarget({ id: cat.id, name: cat.name, color: cat.color });
+                          }}
+                        >
+                          <span
+                            className="cat-dot-indicator"
+                            style={{ backgroundColor: cat.color }}
+                          />
+                        </button>
                         <span className="cat-item-name">{cat.name}</span>
                       </div>
                       <div className="cat-item-right">
@@ -659,6 +768,82 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
             <button type="button" className="btn-toast-undo" onClick={handleUndoDeleteCategory}>
               Undo
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Modern Color Palette Popover Modal */}
+      {colorPickerTarget && (
+        <div
+          className="custom-color-popover-overlay"
+          onClick={(e) => {
+            e.stopPropagation();
+            setColorPickerTarget(null);
+          }}
+        >
+          <div
+            className={`custom-color-popover-card ${isDragging ? 'is-dragging' : ''}`}
+            style={{
+              transform: `translate(${popoverPos.x}px, ${popoverPos.y}px)`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="color-popover-header"
+              onMouseDown={handleMouseDownHeader}
+              title="Click and drag to move window"
+            >
+              <div className="color-popover-title-group">
+                <span className="color-popover-dot-preview" style={{ backgroundColor: colorPickerTarget.color }} />
+                <span className="color-popover-title">Color for {colorPickerTarget.name}</span>
+              </div>
+              <button
+                type="button"
+                className="color-popover-close"
+                onClick={() => setColorPickerTarget(null)}
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="color-preset-grid">
+              {COLOR_PALETTE_SWATCHES.map((swatchColor) => {
+                const isCurrent = colorPickerTarget.color.toLowerCase() === swatchColor.toLowerCase();
+                return (
+                  <button
+                    key={swatchColor}
+                    type="button"
+                    className={`color-swatch-btn ${isCurrent ? 'selected' : ''}`}
+                    style={{ backgroundColor: swatchColor }}
+                    onClick={() => {
+                      handleCategoryColorChange(colorPickerTarget.id, colorPickerTarget.name, swatchColor);
+                      setColorPickerTarget({ ...colorPickerTarget, color: swatchColor });
+                    }}
+                  >
+                    {isCurrent && <Check size={12} color="#ffffff" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="color-custom-hex-row">
+              <span className="hex-label">HEX</span>
+              <div className="hex-input-wrapper">
+                <input
+                  type="text"
+                  className="hex-text-input"
+                  value={colorPickerTarget.color}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setColorPickerTarget({ ...colorPickerTarget, color: val });
+                    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                      handleCategoryColorChange(colorPickerTarget.id, colorPickerTarget.name, val);
+                    }
+                  }}
+                />
+                <span className="trigger-swatch" style={{ backgroundColor: colorPickerTarget.color }} />
+              </div>
+            </div>
           </div>
         </div>
       )}
