@@ -8,7 +8,7 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 interface AuthLayoutProps {
   theme: 'light' | 'dark' | 'system';
   authMode: 'login' | 'register';
-  onToggleTheme: (theme: 'light' | 'dark' | 'system') => void;
+  onToggleTheme?: (theme: 'light' | 'dark' | 'system') => void;
   onToggleAuthMode: (mode: 'login' | 'register') => void;
   onLoginSuccess: (user: UserProfile) => void;
 }
@@ -16,7 +16,6 @@ interface AuthLayoutProps {
 export const AuthLayout: React.FC<AuthLayoutProps> = ({
   theme,
   authMode,
-  onToggleTheme,
   onToggleAuthMode,
   onLoginSuccess,
 }) => {
@@ -51,9 +50,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
     <div className="vinora-layout" data-theme={theme}>
       {/* Floating Controls Bar */}
       <ThemeToggle
-        theme={theme}
         authMode={authMode}
-        onToggleTheme={onToggleTheme}
         onToggleAuthMode={onToggleAuthMode}
       />
 
