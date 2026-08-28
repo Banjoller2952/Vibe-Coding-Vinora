@@ -6048,6 +6048,241 @@ button, input, select {
   color: #98a2b3;
 }
 
+/* ==========================================================================
+   VINORA RESPONSIVE DESIGN SYSTEM (Mobile, Tablet, Laptop, Desktop)
+   ========================================================================== */
+
+/* Default Desktop (>1024px) Mobile Header & Backdrop Hidden */
+.dash-mobile-header,
+.mobile-drawer-backdrop {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   TABLET & MOBILE SCREENS (max-width: 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .vinora-dashboard-app {
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Fixed Mobile Navigation Top Header */
+  .dash-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background-color: var(--dash-sidebar-bg, #ffffff);
+    border-bottom: 1px solid var(--dash-sidebar-border, #eaecf0);
+    padding: 0 1.25rem;
+    z-index: 1000;
+  }
+
+  .mobile-header-left,
+  .mobile-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .mobile-hamburger-btn,
+  .mobile-theme-btn {
+    background: transparent;
+    border: none;
+    color: var(--dash-text-primary, #181d27);
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  .user-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .user-avatar-initials {
+    width: 100%;
+    height: 100%;
+    background-color: #173e27;
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Mobile Drawer Backdrop Overlay */
+  .mobile-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 1900;
+  }
+
+  /* Off-canvas Slide Drawer Sidebar */
+  .dash-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 280px !important;
+    background-color: var(--dash-sidebar-bg, #ffffff);
+    z-index: 2000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .dash-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Main Scroll Container Padding Offset for Fixed Mobile Header */
+  .dash-main {
+    height: calc(100vh - 64px);
+    margin-top: 64px;
+    width: 100%;
+  }
+
+  .dash-scroll-container {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  /* Responsive Grid System Layouts */
+  .dash-grid,
+  .hero-grid-2col,
+  .dash-card-grid,
+  .reports-charts-grid,
+  .savings-grid-2col,
+  .savings-hero-card {
+    grid-template-columns: 1fr !important;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .reports-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .currency-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   SMALL MOBILE PHONES (max-width: 640px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .dash-scroll-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .hero-greeting-card {
+    padding: 1.25rem;
+  }
+
+  .balance-amount {
+    font-size: 1.85rem;
+  }
+
+  .hero-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .reports-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .currency-grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .appearance-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Transactions View Controls */
+  .tx-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .tx-controls-right {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .tx-search-input-wrapper,
+  .tx-segmented-control {
+    width: 100% !important;
+  }
+
+  .tx-segmented-control {
+    justify-content: space-between;
+  }
+
+  .tx-segment-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Horizontal Scroll for Data Tables on Mobile */
+  .tx-table-container,
+  .transactions-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tx-table {
+    min-width: 580px;
+  }
+
+  /* Mobile Responsive Modals */
+  .log-modal-card,
+  .filters-modal-card,
+  .new-goal-modal-card,
+  .delete-confirm-card {
+    width: 94vw !important;
+    max-height: 90vh !important;
+    padding: 1.25rem !important;
+    border-radius: 18px !important;
+    overflow-y: auto;
+  }
+
+  .custom-color-popover-card {
+    max-width: 90vw !important;
+    padding: 1rem !important;
+  }
+}
+
 
 
 
