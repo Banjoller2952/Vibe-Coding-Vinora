@@ -260,12 +260,25 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
       setDeleteCategoryTarget(null);
 
       if (initialData) {
-        setTitle(initialData.title || 'Whole Foods');
-        setAmount(initialData.amount ? Math.abs(initialData.amount).toString().replace('.', ',') : '64,28');
+        setTitle(initialData.title || '');
+        const activeCurr = displayCurrency || 'EUR';
+        const rate = CURRENCIES[activeCurr]?.rateToEUR || 1;
+        const converted = Math.abs(initialData.amount || 0) * rate;
+
+        let formattedAmountStr = '';
+        if (converted > 0) {
+          if (['IDR', 'JPY', 'KRW', 'VND'].includes(activeCurr)) {
+            formattedAmountStr = Math.round(converted).toString();
+          } else {
+            formattedAmountStr = Number(converted.toFixed(2)).toString().replace('.', ',');
+          }
+        }
+
+        setAmount(formattedAmountStr);
         setType(initialData.amount >= 0 ? 'income' : 'expense');
-        setNote(initialData.note || 'Weekly shop');
-        setDate(initialData.date || initialData.dateGroup || '22 Jul');
-        setCurrency(displayCurrency);
+        setNote(initialData.note || '');
+        setDate(initialData.date || initialData.dateGroup || '');
+        setCurrency(activeCurr);
 
         // Find or set category option
         const existingCat = categories.find(
@@ -376,6 +389,32 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
     setSearchQuery('');
   };
 
+  const handleSelectCurrency = (newCode: string) => {
+    if (newCode === currency) {
+      setIsCurrencyDropdownOpen(false);
+      return;
+    }
+
+    const oldRate = CURRENCIES[currency]?.rateToEUR || 1;
+    const newRate = CURRENCIES[newCode]?.rateToEUR || 1;
+    const rawVal = parseFloat(amount.replace(',', '.'));
+
+    if (!isNaN(rawVal) && rawVal > 0) {
+      const amountInEUR = rawVal / oldRate;
+      const convertedNew = amountInEUR * newRate;
+      let formattedNew = '';
+      if (['IDR', 'JPY', 'KRW', 'VND'].includes(newCode)) {
+        formattedNew = Math.round(convertedNew).toString();
+      } else {
+        formattedNew = Number(convertedNew.toFixed(2)).toString().replace('.', ',');
+      }
+      setAmount(formattedNew);
+    }
+
+    setCurrency(newCode);
+    setIsCurrencyDropdownOpen(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !amount) return;
@@ -449,10 +488,10 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
           <div className="new-goal-title-group">
             <h2 className="new-goal-title">{isEditMode ? 'Edit entry' : 'New entry'}</h2>
             <p className="new-goal-subtitle">
-              {isEditMode ? 'Adjust the details of this entry.' : 'Log something that came in or went out.'}
+              {isEditMode ? 'Adjust the details of this entry.' : 'Log a new spending or income transaction.'}
             </p>
           </div>
-          <button className="new-goal-close-btn" onClick={onClose} aria-label="Close modal">
+          <button className="new-goal-close-btn" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
@@ -525,10 +564,7 @@ export const LogTransactionModal: React.FC<LogTransactionModalProps> = ({
                             key={cCode}
                             type="button"
                             className={`currency-option-row ${isSelected ? 'selected' : ''}`}
-                            onClick={() => {
-                              setCurrency(cCode);
-                              setIsCurrencyDropdownOpen(false);
-                            }}
+                            onClick={() => handleSelectCurrency(cCode)}
                           >
                             <div className="currency-option-left">
                               <span className="currency-option-code">{cCode}</span>
