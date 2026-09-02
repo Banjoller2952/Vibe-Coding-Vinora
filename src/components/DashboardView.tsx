@@ -205,8 +205,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const expenseLinePath = getMonotoneCubicPath(expensePoints);
   const expenseAreaPath = `${expenseLinePath} L 460,160 L 60,160 Z`;
 
-  const incomeColor = theme === 'dark' ? '#5FAF7A' : '#225A39';
-  const expenseColor = theme === 'dark' ? '#E07A48' : '#C26D40';
+  const isDark = theme === 'dark' || (theme === 'system' && (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark'));
+  const incomeColor = isDark ? '#75E1A7' : '#225A39';
+  const expenseColor = isDark ? '#FDB022' : '#B1683E';
 
   // First name greeting fallback to ELENA if generic
   const firstName = user?.name ? user.name.split(' ')[0].toUpperCase() : 'ELENA';
@@ -437,7 +438,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     className={`axis-label ${isHovered ? 'axis-label-active' : ''}`}
                     textAnchor="middle"
                     fontWeight={isHovered ? '700' : '500'}
-                    fill={isHovered ? (theme === 'dark' ? '#f0f4f2' : '#1a221e') : undefined}
+                    fill={isHovered ? (isDark ? '#F7F7F7' : '#181D27') : undefined}
                   >
                     {pt.label}
                   </text>

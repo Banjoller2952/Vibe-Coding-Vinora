@@ -6,23 +6,23 @@
   --font-family-sf-text: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
   
   /* Mapped directly from Figma JSON Tokens */
-  --bg-left-canvas: var(--color-backgroundbg-secondary-color, #f7f3e9);
-  --bg-right-canvas: var(--color-backgroundbg-primary, #ffffff);
-  --text-primary: var(--buttons-secondarybutton-secondary-fg, #1d1d1f);
-  --text-muted: var(--buttons-tertiarybutton-tertiary-fg, #535862);
+  --bg-left-canvas: var(--color-background-bg-secondary-color, #f7f3e9);
+  --bg-right-canvas: var(--color-background-bg-primary, #ffffff);
+  --text-primary: var(--buttons-secondary-button-secondary-fg, #1d1d1f);
+  --text-muted: var(--buttons-tertiary-button-tertiary-fg, #535862);
   
-  --btn-primary-bg: var(--buttons-primarybutton-primary-bg, #225a39);
-  --btn-primary-bg-hover: var(--buttons-primarybutton-primary-bg_hover, #143622);
-  --btn-primary-fg: var(--buttons-primarybutton-primary-fg, #ffffff);
+  --btn-primary-bg: var(--buttons-primary-button-primary-bg, #225a39);
+  --btn-primary-bg-hover: var(--buttons-primary-button-primary-bg-hover, #143622);
+  --btn-primary-fg: var(--buttons-primary-button-primary-fg, #ffffff);
 
-  --btn-secondary-bg: var(--buttons-secondarybutton-secondary-bg, #ffffff);
-  --btn-secondary-bg-hover: var(--buttons-secondarybutton-secondary-bg_hover, #fafafa);
-  --btn-secondary-border: var(--buttons-secondarybutton-secondary-border, #d5d7da);
-  --btn-secondary-fg: var(--buttons-secondarybutton-secondary-fg, #414651);
+  --btn-secondary-bg: var(--buttons-secondary-button-secondary-bg, #ffffff);
+  --btn-secondary-bg-hover: var(--buttons-secondary-button-secondary-bg-hover, #fafafa);
+  --btn-secondary-border: var(--buttons-secondary-button-secondary-border, #d5d7da);
+  --btn-secondary-fg: var(--buttons-secondary-button-secondary-fg, #414651);
 
-  --input-bg: var(--buttons-secondarybutton-secondary-bg, #ffffff);
-  --input-border: var(--buttons-secondarybutton-secondary-border, #d5d7da);
-  --divider-color: var(--buttons-secondarybutton-secondary-border, #e9eaeb);
+  --input-bg: var(--buttons-secondary-button-secondary-bg, #ffffff);
+  --input-border: var(--buttons-secondary-button-secondary-border, #d5d7da);
+  --divider-color: var(--buttons-secondary-button-secondary-border, #e9eaeb);
 
   /* Dashboard specific tokens */
   --dash-bg: #f5f6f8;
@@ -43,22 +43,22 @@
 
 [data-theme="dark"] {
   --bg-left-canvas: #262016;
-  --bg-right-canvas: var(--color-backgroundbg-primary, #0c0e12);
-  --text-primary: var(--buttons-secondarybutton-secondary-fg, #cecfd2);
-  --text-muted: var(--buttons-tertiarybutton-tertiary-fg, #95979d);
+  --bg-right-canvas: var(--color-background-bg-primary, #0c0e12);
+  --text-primary: var(--buttons-secondary-button-secondary-fg, #cecfd2);
+  --text-muted: var(--buttons-tertiary-button-tertiary-fg, #95979d);
 
-  --btn-primary-bg: var(--buttons-primarybutton-primary-bg, #225a39);
-  --btn-primary-bg-hover: var(--buttons-primarybutton-primary-bg_hover, #1b482e);
-  --btn-primary-fg: var(--buttons-primarybutton-primary-fg, #ffffff);
+  --btn-primary-bg: var(--buttons-primary-button-primary-bg, #225a39);
+  --btn-primary-bg-hover: var(--buttons-primary-button-primary-bg-hover, #1b482e);
+  --btn-primary-fg: var(--buttons-primary-button-primary-fg, #ffffff);
 
-  --btn-secondary-bg: var(--buttons-secondarybutton-secondary-bg, #14161b);
-  --btn-secondary-bg-hover: var(--buttons-secondarybutton-secondary-bg_hover, #22262f);
-  --btn-secondary-border: var(--buttons-secondarybutton-secondary-border, #383a41);
-  --btn-secondary-fg: var(--buttons-secondarybutton-secondary-fg, #cecfd2);
+  --btn-secondary-bg: var(--buttons-secondary-button-secondary-bg, #14161b);
+  --btn-secondary-bg-hover: var(--buttons-secondary-button-secondary-bg-hover, #22262f);
+  --btn-secondary-border: var(--buttons-secondary-button-secondary-border, #383a41);
+  --btn-secondary-fg: var(--buttons-secondary-button-secondary-fg, #cecfd2);
 
-  --input-bg: var(--buttons-secondarybutton-secondary-bg, #14161b);
-  --input-border: var(--buttons-secondarybutton-secondary-border, #383a41);
-  --divider-color: var(--color-backgroundbg-tertiary, #22262f);
+  --input-bg: var(--buttons-secondary-button-secondary-bg, #14161b);
+  --input-border: var(--buttons-secondary-button-secondary-border, #383a41);
+  --divider-color: var(--color-background-bg-tertiary, #22262f);
 
   /* Dashboard specific dark tokens */
   --dash-bg: #0b0d12;
@@ -70,10 +70,10 @@
   --dash-text-primary: #ffffff;
   --dash-text-secondary: #9a9fae;
   --dash-text-muted: #6c7280;
-  --dash-nav-active-bg: #17291f;
-  --dash-nav-active-text: #5faf7a;
-  --dash-badge-green-bg: #132b1e;
-  --dash-badge-green-text: #5faf7a;
+  --dash-nav-active-bg: rgba(117, 225, 167, 0.12);
+  --dash-nav-active-text: #75e1a7;
+  --dash-badge-green-bg: rgba(117, 225, 167, 0.15);
+  --dash-badge-green-text: #75e1a7;
   --dash-progress-track: #262a37;
 }
 
@@ -752,7 +752,7 @@ button, input, select {
 .balance-badge.positive,
 .balance-badge:not(.negative) {
   background-color: var(--dash-badge-green-bg, #eef7f2);
-  color: var(--dash-badge-green-text, #1e6d42);
+  color: var(--dash-badge-green-text, #225a39);
 }
 
 .balance-badge.negative {
@@ -1076,7 +1076,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .chart-html-dot {
-  border-color: #1b221d;
+  border-color: var(--color-background-bg-secondary, #14161b);
 }
 
 .chart-html-dot:hover,
@@ -1116,7 +1116,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .chart-html-tooltip-card {
-  background-color: #1b221d;
+  background-color: var(--color-background-bg-secondary, #14161b);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
 }
@@ -1131,7 +1131,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .tooltip-header-row {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  border-bottom-color: var(--color-border-border-primary, #22262f);
 }
 
 .tooltip-month-label {
@@ -1141,7 +1141,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .tooltip-month-label {
-  color: #f0f4f2;
+  color: var(--color-text-text-gray-text-primary, #f7f7f7);
 }
 
 .tooltip-net-val {
@@ -1150,11 +1150,11 @@ button, input, select {
 }
 
 .tooltip-net-val.positive {
-  color: #1e6d42;
+  color: #225a39;
 }
 
 [data-theme="dark"] .tooltip-net-val.positive {
-  color: #5faf7a;
+  color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .tooltip-net-val.negative {
@@ -1189,7 +1189,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .tooltip-row-label {
-  color: #9eb3a6;
+  color: var(--color-text-text-gray-text-tertiary, #95979d);
 }
 
 .tooltip-row-val {
@@ -1206,7 +1206,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .bar-tooltip-bg {
-  fill: #1b221d;
+  fill: var(--color-background-bg-secondary, #14161b);
   stroke: rgba(255, 255, 255, 0.12);
   filter: drop-shadow(0px 6px 16px rgba(0, 0, 0, 0.45));
 }
@@ -1218,11 +1218,11 @@ button, input, select {
 }
 
 .bar-tooltip-text.inc {
-  fill: #1e6d42;
+  fill: #225a39;
 }
 
 [data-theme="dark"] .bar-tooltip-text.inc {
-  fill: #5faf7a;
+  fill: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .bar-tooltip-text.exp {
@@ -1230,7 +1230,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .bar-tooltip-text.exp {
-  fill: #e58b5b;
+  fill: var(--color-text-text-gray-text-warning, #fdb022);
 }
 
 .chart-dot {
@@ -1315,7 +1315,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .income-dot {
-  background-color: #5faf7a;
+  background-color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .expense-dot {
@@ -2549,8 +2549,8 @@ button, input, select {
 
 [data-theme="dark"] .btn-more-filters:hover,
 [data-theme="dark"] .btn-more-filters.active {
-  border-color: #5faf7a;
-  color: #5faf7a;
+  border-color: var(--color-text-text-gray-text-success, #75e1a7);
+  color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .filter-active-dot {
@@ -2561,7 +2561,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .filter-active-dot {
-  background-color: #5faf7a;
+  background-color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 /* More Filters Expandable Panel */
@@ -3346,7 +3346,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .cat-checkmark {
-  color: #5faf7a;
+  color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .suggested-chips-section {
@@ -3406,9 +3406,9 @@ button, input, select {
 
 [data-theme="dark"] .chip-btn:hover,
 [data-theme="dark"] .chip-btn.active {
-  border-color: #5faf7a;
+  border-color: var(--color-text-text-gray-text-success, #75e1a7);
   background-color: rgba(95, 175, 122, 0.15);
-  color: #5faf7a;
+  color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 /* Two-column inputs grid */
@@ -3448,7 +3448,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .filter-text-input:focus {
-  border-color: #5faf7a;
+  border-color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 /* Footer Actions */
@@ -3940,7 +3940,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .grid-progress-fill {
-  background-color: #5faf7a;
+  background-color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .grid-meta-row {
@@ -4352,7 +4352,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .bar-income {
-  fill: #459365;
+  fill: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .bar-expense {
@@ -4360,7 +4360,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .bar-expense {
-  fill: #d67b4b;
+  fill: var(--color-text-text-gray-text-warning, #fdb022);
 }
 
 .bar-rect.highlight {
@@ -4384,7 +4384,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .bar-tooltip-inc {
-  fill: #459365;
+  fill: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .bar-tooltip-exp {
@@ -4394,7 +4394,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .bar-tooltip-exp {
-  fill: #d67b4b;
+  fill: var(--color-text-text-gray-text-warning, #fdb022);
 }
 
 /* Distribution Donut Chart */
@@ -4682,7 +4682,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .new-goal-input:focus {
-  border-color: #5faf7a;
+  border-color: var(--color-text-text-gray-text-success, #75e1a7);
   box-shadow: 0 0 0 3px rgba(95, 175, 122, 0.15);
 }
 
@@ -4814,7 +4814,7 @@ button, input, select {
 }
 
 [data-theme="dark"] .cat-check-icon {
-  color: #5faf7a;
+  color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .suggested-section {
@@ -4876,9 +4876,9 @@ button, input, select {
 }
 
 [data-theme="dark"] .sug-chip-btn:hover {
-  border-color: #5faf7a;
+  border-color: var(--color-text-text-gray-text-success, #75e1a7);
   background-color: rgba(95, 175, 122, 0.15);
-  color: #5faf7a;
+  color: var(--color-text-text-gray-text-success, #75e1a7);
 }
 
 .new-goal-footer-actions {
@@ -5351,7 +5351,7 @@ button, input, select {
 .currency-option-symbol {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #1e6d42;
+  color: #225a39;
 }
 
 /* Custom Calendar GUI Popover */
@@ -5369,7 +5369,7 @@ button, input, select {
 }
 
 .date-calendar-btn:hover {
-  color: #1e6d42;
+  color: #225a39;
   background-color: rgba(30, 109, 66, 0.08);
 }
 
@@ -5471,16 +5471,16 @@ button, input, select {
 
 .cal-day-cell.day-btn:hover {
   background-color: #eef7f2;
-  color: #1e6d42;
+  color: #225a39;
 }
 
 .cal-day-cell.is-today {
-  border: 1px solid #1e6d42;
+  border: 1px solid #225a39;
   font-weight: 600;
 }
 
 .cal-day-cell.selected {
-  background-color: #1e6d42;
+  background-color: #225a39;
   color: #ffffff !important;
   font-weight: 600;
 }
@@ -5715,7 +5715,7 @@ button, input, select {
   background: transparent;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #1e6d42;
+  color: #225a39;
   cursor: pointer;
 }
 
@@ -5954,7 +5954,7 @@ button, input, select {
 
 [data-theme="dark"] .currency-card-item.selected {
   background-color: #242936;
-  border-color: #5faf7a;
+  border-color: var(--color-text-text-gray-text-success, #75e1a7);
   box-shadow: 0 0 0 2px rgba(95, 175, 122, 0.2);
 }
 
@@ -6094,7 +6094,7 @@ button, input, select {
 
 [data-theme="dark"] .appearance-card-item.selected {
   background-color: #242936;
-  border-color: #5faf7a;
+  border-color: var(--color-text-text-gray-text-success, #75e1a7);
   box-shadow: 0 0 0 2px rgba(95, 175, 122, 0.2);
 }
 

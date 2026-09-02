@@ -348,7 +348,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
 
                     // Theme responsive adjustments for Rent segment dark color
                     const strokeColor =
-                      cat.name === 'Rent' && theme === 'dark' ? '#26332a' : cat.color;
+                      cat.name === 'Rent' && theme === 'dark' ? '#1B482E' : cat.color;
 
                     return (
                       <circle
@@ -375,7 +375,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
             <div className="category-legend-list">
               {categoryExpenses.map((cat) => {
                 const isHovered = hoveredCategory === cat.name;
-                const dotColor = cat.name === 'Rent' && theme === 'dark' ? '#5faf7a' : cat.color;
+                const dotColor = cat.name === 'Rent' && theme === 'dark' ? '#75E1A7' : cat.color;
 
                 return (
                   <div
