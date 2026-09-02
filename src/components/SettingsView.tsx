@@ -91,9 +91,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </div>
 
-          {/* Sub-block B: See convert */}
+          {/* Sub-block B: See convertion */}
           <div className="settings-sub-section">
-            <span className="settings-sub-label">See convert</span>
+            <span className="settings-sub-label">See convertion</span>
             <div className="currency-grid-4">
               {CURRENCY_LIST.map((c) => {
                 const isSelected = convertCurrency === c.code;

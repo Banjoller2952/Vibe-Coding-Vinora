@@ -53,6 +53,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       {/* Right Login / Register Auth Section */}
       <div className="auth-panel">
         {authMode === 'login' ? (
+
           <LoginForm
             onSignInSuccess={handleSignInSuccess}
             onSwitchToRegister={() => onToggleAuthMode('register')}

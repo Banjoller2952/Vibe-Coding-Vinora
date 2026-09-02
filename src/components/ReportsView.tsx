@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatMoney } from '../lib/currency';
 import { ExtendedTransactionItem } from './TransactionsView';
 
@@ -14,17 +15,28 @@ interface CategoryExpense {
   color: string;
 }
 
-const BASE_MONTHLY_DATA = [
+const ALL_12_MONTHS_BASE = [
+  { label: 'Jan', income: 2800, expense: 1950 },
   { label: 'Feb', income: 3100, expense: 2100 },
   { label: 'Mar', income: 3350, expense: 2400 },
   { label: 'Apr', income: 3400, expense: 2050 },
   { label: 'May', income: 3850, expense: 2480 },
   { label: 'Jun', income: 3450, expense: 2300 },
+  { label: 'Jul', income: 3870, expense: 1483.04 },
+  { label: 'Aug', income: 3600, expense: 2200 },
+  { label: 'Sep', income: 3900, expense: 2500 },
+  { label: 'Oct', income: 4100, expense: 2600 },
+  { label: 'Nov', income: 3750, expense: 2400 },
+  { label: 'Dec', income: 4500, expense: 3100 },
 ];
 
 export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency = 'EUR', transactions = [] }) => {
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+
+  // Timeframe Navigation State: '6M' or '12M', startMonthIndex (1 = Feb)
+  const [timeframeMode, setTimeframeMode] = useState<'6M' | '12M'>('6M');
+  const [startMonthIndex, setStartMonthIndex] = useState<number>(1);
 
   // Current Month (July) metrics calculated dynamically
   const currentIncome = useMemo(() => {
@@ -40,10 +52,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
   const netSaved = currentIncome - currentExpense;
   const savingsRate = currentIncome > 0 ? Math.round((netSaved / currentIncome) * 100) : 0;
 
-  const monthlyData = [
-    ...BASE_MONTHLY_DATA,
-    { label: 'Jul', income: currentIncome, expense: currentExpense },
-  ];
+  // Dynamic 12-Month Data Construction
+  const allMonthsData = useMemo(() => {
+    return ALL_12_MONTHS_BASE.map((m) => {
+      if (m.label === 'Jul') {
+        return { ...m, income: currentIncome, expense: currentExpense };
+      }
+      return m;
+    });
+  }, [currentIncome, currentExpense]);
+
+  // Selected Visible Months based on 6M / 12M and startMonthIndex
+  const monthlyData = useMemo(() => {
+    if (timeframeMode === '12M') {
+      return allMonthsData;
+    }
+    return allMonthsData.slice(startMonthIndex, startMonthIndex + 6);
+  }, [allMonthsData, timeframeMode, startMonthIndex]);
 
   const categoryExpenses: CategoryExpense[] = useMemo(() => {
     const map: Record<string, CategoryExpense> = {
@@ -134,9 +159,60 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
       <div className="reports-charts-grid">
         {/* Left Card: Income vs. Expense Bar Chart */}
         <div className="reports-card bar-chart-card">
-          <div className="card-header">
-            <h3 className="card-title">Income vs. expense</h3>
-            <span className="card-subtitle">Six-month comparison</span>
+          <div className="card-header flex-header-between">
+            <div>
+              <h3 className="card-title">Income vs. expense</h3>
+              <span className="card-subtitle">Monthly comparison</span>
+            </div>
+
+            <div className="chart-range-controls">
+              {timeframeMode === '6M' && (
+                <button
+                  type="button"
+                  className="btn-range-arrow"
+                  disabled={startMonthIndex <= 0}
+                  onClick={() => setStartMonthIndex((prev) => Math.max(0, prev - 1))}
+                  title="Previous 6 months"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+              )}
+
+              <span className="card-range-badge">
+                {timeframeMode === '6M'
+                  ? `${monthlyData[0]?.label} — ${monthlyData[monthlyData.length - 1]?.label}`
+                  : 'Jan — Dec'}
+              </span>
+
+              {timeframeMode === '6M' && (
+                <button
+                  type="button"
+                  className="btn-range-arrow"
+                  disabled={startMonthIndex >= 6}
+                  onClick={() => setStartMonthIndex((prev) => Math.min(6, prev + 1))}
+                  title="Next 6 months"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              )}
+
+              <div className="timeframe-toggle-pill">
+                <button
+                  type="button"
+                  className={`timeframe-btn ${timeframeMode === '6M' ? 'active' : ''}`}
+                  onClick={() => setTimeframeMode('6M')}
+                >
+                  6M
+                </button>
+                <button
+                  type="button"
+                  className={`timeframe-btn ${timeframeMode === '12M' ? 'active' : ''}`}
+                  onClick={() => setTimeframeMode('12M')}
+                >
+                  12M
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="bar-chart-wrapper">
@@ -157,7 +233,11 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
 
               {/* Bars for Each Month */}
               {monthlyData.map((item, i) => {
-                const colX = 75 + i * 70;
+                const is12M = timeframeMode === '12M';
+                const colX = is12M ? (58 + i * (410 / 11)) : (75 + i * 70);
+                const barWidth = is12M ? 12 : 20;
+                const barOffset = is12M ? 2 : 4;
+
                 const incHeight = Math.min(150, Math.max(0, (item.income / yMax) * 150));
                 const expHeight = Math.min(150, Math.max(0, (item.expense / yMax) * 150));
 
@@ -177,30 +257,31 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
                   >
                     {/* Income Bar (Green) */}
                     <rect
-                      x={colX - 18}
+                      x={colX - barWidth - barOffset / 2}
                       y={incY}
-                      width="20"
+                      width={barWidth}
                       height={incHeight}
-                      rx="4"
+                      rx={is12M ? 2 : 4}
                       className={`bar-rect bar-income ${isHovered ? 'highlight' : ''}`}
                     />
 
                     {/* Expense Bar (Orange) */}
                     <rect
-                      x={colX + 4}
+                      x={colX + barOffset / 2}
                       y={expY}
-                      width="20"
+                      width={barWidth}
                       height={expHeight}
-                      rx="4"
+                      rx={is12M ? 2 : 4}
                       className={`bar-rect bar-expense ${isHovered ? 'highlight' : ''}`}
                     />
 
                     {/* X-Axis Label */}
                     <text
-                      x={colX + 3}
+                      x={colX}
                       y="195"
                       className={`chart-axis-label ${isHovered ? 'active' : ''}`}
                       textAnchor="middle"
+                      fontSize={is12M ? "9" : "10"}
                     >
                       {item.label}
                     </text>
@@ -209,7 +290,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
                     {isHovered && (
                       <g className="bar-tooltip-group" style={{ pointerEvents: 'none' }}>
                         <rect
-                          x={colX - 54}
+                          x={Math.max(10, Math.min(376, colX - 57))}
                           y={tooltipY}
                           width="114"
                           height="42"
@@ -217,7 +298,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
                           className="bar-tooltip-bg"
                         />
                         <text
-                          x={colX - 44}
+                          x={Math.max(20, Math.min(386, colX - 47))}
                           y={tooltipY + 17}
                           className="bar-tooltip-text inc"
                           fontSize="10"
@@ -227,7 +308,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ theme, displayCurrency
                           Inc: {formatMoney(item.income, displayCurrency)}
                         </text>
                         <text
-                          x={colX - 44}
+                          x={Math.max(20, Math.min(386, colX - 47))}
                           y={tooltipY + 32}
                           className="bar-tooltip-text exp"
                           fontSize="10"

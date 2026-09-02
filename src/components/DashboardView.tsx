@@ -6,6 +6,8 @@ import {
   ArrowDownRight,
   Wallet,
   TrendingUp,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { ExtendedTransactionItem, BADGE_COLOR_MAP } from './TransactionsView';
 import { UserProfile } from './LoginForm';
@@ -21,6 +23,21 @@ interface DashboardViewProps {
   displayCurrency?: string;
 }
 
+const ALL_12_MONTHS_BASE = [
+  { label: 'Jan', income: 2800, expense: 1950 },
+  { label: 'Feb', income: 3100, expense: 2100 },
+  { label: 'Mar', income: 3350, expense: 2400 },
+  { label: 'Apr', income: 3400, expense: 2050 },
+  { label: 'May', income: 3850, expense: 2480 },
+  { label: 'Jun', income: 3450, expense: 2300 },
+  { label: 'Jul', income: 3870, expense: 1483.04 },
+  { label: 'Aug', income: 3600, expense: 2200 },
+  { label: 'Sep', income: 3900, expense: 2500 },
+  { label: 'Oct', income: 4100, expense: 2600 },
+  { label: 'Nov', income: 3750, expense: 2400 },
+  { label: 'Dec', income: 4500, expense: 3100 },
+];
+
 export const DashboardView: React.FC<DashboardViewProps> = ({
   user,
   theme,
@@ -32,6 +49,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
   const [activeSeries, setActiveSeries] = useState<'all' | 'income' | 'expense'>('all');
+
+  // Timeframe Navigation State: '6M' or '12M', startMonthIndex (1 = Feb, so Feb-Jul)
+  const [timeframeMode, setTimeframeMode] = useState<'6M' | '12M'>('6M');
+  const [startMonthIndex, setStartMonthIndex] = useState<number>(1);
 
   // Dynamic July income, expenses, net, and spending percentage
   const julyIncome = useMemo(() => {
@@ -66,23 +87,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return map;
   }, [transactions]);
 
-  // Six months of flow chart data
-  const rawMonthData = [
-    { label: 'Feb', income: 3100, expense: 2100, x: 60 },
-    { label: 'Mar', income: 3350, expense: 2400, x: 140 },
-    { label: 'Apr', income: 3400, expense: 2050, x: 220 },
-    { label: 'May', income: 3850, expense: 2480, x: 300 },
-    { label: 'Jun', income: 3450, expense: 2300, x: 380 },
-    { label: 'Jul', income: julyIncome, expense: julyExpenses, x: 460 },
-  ];
+  // Dynamic 12-Month Data Construction
+  const allMonthsData = useMemo(() => {
+    return ALL_12_MONTHS_BASE.map((m) => {
+      if (m.label === 'Jul') {
+        return { ...m, income: julyIncome, expense: julyExpenses };
+      }
+      return m;
+    });
+  }, [julyIncome, julyExpenses]);
 
-  const maxVal = Math.max(...rawMonthData.flatMap((d) => [d.income, d.expense]), 1000);
+  // Selected Visible Months based on 6M / 12M and startMonthIndex
+  const visibleData = useMemo(() => {
+    if (timeframeMode === '12M') {
+      return allMonthsData.map((d, i) => ({
+        ...d,
+        x: 50 + i * (430 / 11),
+      }));
+    }
+    const sliced = allMonthsData.slice(startMonthIndex, startMonthIndex + 6);
+    return sliced.map((d, i) => ({
+      ...d,
+      x: 60 + i * 80,
+    }));
+  }, [allMonthsData, timeframeMode, startMonthIndex]);
+
+  const maxVal = Math.max(...visibleData.flatMap((d) => [d.income, d.expense]), 1000);
   const yMax = Math.ceil((maxVal * 1.15) / 1000) * 1000 || 4000;
   const topY = 25;
   const bottomY = 155;
   const chartHeight = bottomY - topY;
 
-  const monthData = rawMonthData.map((pt) => ({
+  const monthData = visibleData.map((pt) => ({
     ...pt,
     incY: Math.max(topY, Math.min(bottomY, bottomY - (pt.income / yMax) * chartHeight)),
     expY: Math.max(topY, Math.min(bottomY, bottomY - (pt.expense / yMax) * chartHeight)),
@@ -243,10 +279,58 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="dash-card chart-card">
         <div className="card-header-flex">
           <div>
-            <h3 className="card-title">Six months of flow</h3>
+            <h3 className="card-title">Flow of funds</h3>
             <p className="card-subtitle">Income against expenses, monthly</p>
           </div>
-          <span className="card-range-badge">Feb — Jul</span>
+          
+          <div className="chart-range-controls">
+            {timeframeMode === '6M' && (
+              <button
+                type="button"
+                className="btn-range-arrow"
+                disabled={startMonthIndex <= 0}
+                onClick={() => setStartMonthIndex((prev) => Math.max(0, prev - 1))}
+                title="Previous 6 months"
+              >
+                <ChevronLeft size={14} />
+              </button>
+            )}
+
+            <span className="card-range-badge">
+              {timeframeMode === '6M'
+                ? `${monthData[0]?.label} — ${monthData[monthData.length - 1]?.label}`
+                : 'Jan — Dec'}
+            </span>
+
+            {timeframeMode === '6M' && (
+              <button
+                type="button"
+                className="btn-range-arrow"
+                disabled={startMonthIndex >= 6}
+                onClick={() => setStartMonthIndex((prev) => Math.min(6, prev + 1))}
+                title="Next 6 months"
+              >
+                <ChevronRight size={14} />
+              </button>
+            )}
+
+            <div className="timeframe-toggle-pill">
+              <button
+                type="button"
+                className={`timeframe-btn ${timeframeMode === '6M' ? 'active' : ''}`}
+                onClick={() => setTimeframeMode('6M')}
+              >
+                6M
+              </button>
+              <button
+                type="button"
+                className={`timeframe-btn ${timeframeMode === '12M' ? 'active' : ''}`}
+                onClick={() => setTimeframeMode('12M')}
+              >
+                12M
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* SVG Line Chart */}
@@ -429,7 +513,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div className="tooltip-header-row">
                     <span className="tooltip-month-label">{pt.label}</span>
                     <span className={`tooltip-net-val ${net >= 0 ? 'positive' : 'negative'}`}>
-                      {net >= 0 ? `+€${net.toLocaleString()}` : `-€${Math.abs(net).toLocaleString()}`}
+                      {net >= 0 ? `+${formatMoney(net, displayCurrency)}` : formatMoney(net, displayCurrency)}
                     </span>
                   </div>
 
@@ -441,7 +525,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <span className="tooltip-row-label">Inc:</span>
                     </span>
                     <span className="tooltip-row-val" style={{ color: incomeColor }}>
-                      €{pt.income.toLocaleString()}
+                      {formatMoney(pt.income, displayCurrency)}
                     </span>
                   </div>
 
@@ -453,7 +537,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <span className="tooltip-row-label">Exp:</span>
                     </span>
                     <span className="tooltip-row-val" style={{ color: expenseColor }}>
-                      €{pt.expense.toLocaleString()}
+                      {formatMoney(pt.expense, displayCurrency)}
                     </span>
                   </div>
                 </div>

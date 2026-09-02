@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, X } from 'lucide-react';
 import { NewGoalModal } from './NewGoalModal';
-import { formatMoney } from '../lib/currency';
+import { formatMoney, getCurrencyQuickPresets } from '../lib/currency';
 
 export interface SavingsGoal {
   id: string;
@@ -309,28 +309,28 @@ export const SavingsView: React.FC<SavingsViewProps> = ({ displayCurrency = 'EUR
 
             <form onSubmit={handleAddContribution} className="modal-form">
               <p className="contribute-modal-sub">
-                Currently saved: €{contributeGoal.currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} of €
-                {contributeGoal.targetAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                Currently saved: {formatMoney(contributeGoal.currentAmount, displayCurrency)} of{' '}
+                {formatMoney(contributeGoal.targetAmount, displayCurrency)}
               </p>
 
               <div className="quick-amount-pills">
-                {[50, 100, 250, 500].map((amt) => (
+                {getCurrencyQuickPresets(displayCurrency).map((preset) => (
                   <button
-                    key={amt}
+                    key={preset.amount}
                     type="button"
                     className="pill-quick-amt"
-                    onClick={() => setContributionAmount(amt.toString())}
+                    onClick={() => setContributionAmount(preset.amount.toString())}
                   >
-                    +€{amt}
+                    {preset.label}
                   </button>
                 ))}
               </div>
 
               <div className="form-group">
-                <label>Contribution Amount (€)</label>
+                <label>Contribution Amount ({displayCurrency})</label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="any"
                   placeholder="Enter amount"
                   value={contributionAmount}
                   onChange={(e) => setContributionAmount(e.target.value)}

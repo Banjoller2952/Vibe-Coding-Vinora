@@ -30,18 +30,16 @@ interface TransactionsViewProps {
 
 // Preset color palette for custom badge color selection matching Figma
 export const PALETTE_COLORS = [
-  '#1f5335',
-  '#c05621',
-  '#d99b38',
-  '#ffffff',
+  '#c26d40',
+  '#d6a75c',
+  '#717680',
+  '#143d24',
   '#0b3319',
-  '#5073b8',
-  '#3b6f7a',
-  '#008b8b',
-  '#c85043',
-  '#4e9b58',
-  '#8c56a8',
-  '#c89a24',
+  '#2e7d32',
+  '#36b37e',
+  '#8b5cf6',
+  '#5b7cb8',
+  '#181d27',
 ];
 
 // Color palette mapping for category badges matching Figma design tokens

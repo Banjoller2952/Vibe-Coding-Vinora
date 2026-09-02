@@ -156,10 +156,25 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
   const handleConfirmDeleteCategory = () => {
     if (deleteCategoryTarget) {
       const catToDelete = deleteCategoryTarget;
+      const isCustomUserCategory = catToDelete.id.startsWith('custom-cat-') &&
+        !INITIAL_CATEGORIES.some((c) => c.name.toLowerCase() === catToDelete.name.toLowerCase()) &&
+        !INITIAL_SUGGESTIONS.some((s) => s.name.toLowerCase() === catToDelete.name.toLowerCase());
+
       setCategories((prev) => prev.filter((c) => c.id !== catToDelete.id));
       setDeletedCategory(catToDelete);
       setCategoryToast({ title: catToDelete.name });
       setDeleteCategoryTarget(null);
+
+      // If not custom user category, add back to suggested list
+      if (!isCustomUserCategory) {
+        setSuggestions((prev) => {
+          if (prev.some((s) => s.name.toLowerCase() === catToDelete.name.toLowerCase())) {
+            return prev;
+          }
+          return [...prev, catToDelete];
+        });
+      }
+
       if (selectedCategory.id === catToDelete.id) {
         const remaining = categories.filter((c) => c.id !== catToDelete.id);
         setSelectedCategory(remaining[0] || INITIAL_CATEGORIES[0]);
@@ -170,6 +185,7 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({
   const handleUndoDeleteCategory = () => {
     if (deletedCategory) {
       setCategories((prev) => [...prev, deletedCategory]);
+      setSuggestions((prev) => prev.filter((s) => s.name.toLowerCase() !== deletedCategory.name.toLowerCase()));
       setDeletedCategory(null);
       setCategoryToast(null);
     }

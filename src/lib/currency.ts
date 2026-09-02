@@ -99,3 +99,75 @@ export const formatMoney = (amountInEUR: number, currencyCode: string = 'EUR'): 
   }
   return `${signStr}${info.symbol}${formattedNum}`;
 };
+
+export const getCurrencySymbol = (currencyCode: string = 'EUR'): string => {
+  const info = CURRENCIES[currencyCode] || CURRENCIES.EUR;
+  return info.symbol;
+};
+
+export interface QuickPreset {
+  amount: number;
+  label: string;
+}
+
+export const getCurrencyQuickPresets = (currencyCode: string = 'EUR'): QuickPreset[] => {
+  const code = currencyCode.toUpperCase();
+  const info = CURRENCIES[code] || CURRENCIES.EUR;
+  const sym = info.symbol;
+
+  switch (code) {
+    case 'IDR':
+      return [
+        { amount: 50000, label: '+Rp50.000' },
+        { amount: 100000, label: '+Rp100.000' },
+        { amount: 250000, label: '+Rp250.000' },
+        { amount: 500000, label: '+Rp500.000' },
+      ];
+    case 'JPY':
+      return [
+        { amount: 5000, label: '+¥5,000' },
+        { amount: 10000, label: '+¥10,000' },
+        { amount: 25000, label: '+¥25,000' },
+        { amount: 50000, label: '+¥50,000' },
+      ];
+    case 'KRW':
+      return [
+        { amount: 50000, label: '+₩50,000' },
+        { amount: 100000, label: '+₩100,000' },
+        { amount: 250000, label: '+₩250,000' },
+        { amount: 500000, label: '+₩500,000' },
+      ];
+    case 'VND':
+      return [
+        { amount: 500000, label: '+500.000 ₫' },
+        { amount: 1000000, label: '+1.000.000 ₫' },
+        { amount: 2500000, label: '+2.500.000 ₫' },
+        { amount: 5000000, label: '+5.000.000 ₫' },
+      ];
+    case 'INR':
+      return [
+        { amount: 1000, label: '+₹1,000' },
+        { amount: 2500, label: '+₹2,500' },
+        { amount: 5000, label: '+₹5,000' },
+        { amount: 10000, label: '+₹10,000' },
+      ];
+    default: {
+      const rate = info.rateToEUR || 1;
+      if (rate > 100) {
+        const base = Math.round(rate * 10);
+        return [
+          { amount: base * 5, label: `+${sym}${(base * 5).toLocaleString()}` },
+          { amount: base * 10, label: `+${sym}${(base * 10).toLocaleString()}` },
+          { amount: base * 25, label: `+${sym}${(base * 25).toLocaleString()}` },
+          { amount: base * 50, label: `+${sym}${(base * 50).toLocaleString()}` },
+        ];
+      }
+      return [
+        { amount: 50, label: `+${sym}50` },
+        { amount: 100, label: `+${sym}100` },
+        { amount: 250, label: `+${sym}250` },
+        { amount: 500, label: `+${sym}500` },
+      ];
+    }
+  }
+};

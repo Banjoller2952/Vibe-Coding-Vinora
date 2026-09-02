@@ -1,4 +1,5 @@
 @import './tokens.css';
+@import './landing.css';
 
 :root {
   --font-family-sf-display: 'SF Pro Display', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', sans-serif;
@@ -921,10 +922,91 @@ button, input, select {
   margin-top: 0.15rem;
 }
 
+.chart-range-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  padding: 3px 6px;
+  border-radius: 9999px;
+  border: 1px solid var(--dash-card-border);
+}
+
+[data-theme="dark"] .chart-range-controls {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.btn-range-arrow {
+  background: transparent;
+  border: none;
+  color: var(--dash-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-range-arrow:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: var(--dash-text-primary);
+}
+
+[data-theme="dark"] .btn-range-arrow:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.btn-range-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .card-range-badge {
   font-size: 0.75rem;
   font-weight: 600;
+  color: var(--dash-text-primary);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.timeframe-toggle-pill {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+[data-theme="dark"] .timeframe-toggle-pill {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.timeframe-btn {
+  border: none;
+  background: transparent;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--dash-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.timeframe-btn.active {
+  background-color: var(--dash-card-bg, #ffffff);
+  color: var(--dash-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .timeframe-btn.active {
+  background-color: #242936;
+  color: #ffffff;
 }
 
 /* Chart Component */
@@ -2890,21 +2972,23 @@ button, input, select {
 }
 
 .color-swatch-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.55rem;
   align-items: center;
-  padding: 0.2rem 0;
+  padding: 0.25rem 0;
 }
 
 .color-swatch-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   padding: 0;
+  margin: 0 auto;
 }
 
 .color-swatch-btn:hover {

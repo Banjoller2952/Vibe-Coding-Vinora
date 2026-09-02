@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { LandingPage } from './components/LandingPage';
 import { AuthLayout } from './components/AuthLayout';
 import { DashboardLayout } from './components/DashboardLayout';
 import { UserProfile } from './components/LoginForm';
@@ -7,6 +8,7 @@ import { auth, onAuthStateChanged, signOut } from './lib/firebase';
 export function App() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'dashboard'>('landing');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [initializing, setInitializing] = useState(true);
 
@@ -28,6 +30,7 @@ export function App() {
           avatar: firebaseUser.photoURL || undefined,
           uid: firebaseUser.uid,
         });
+        setCurrentView('dashboard');
       } else {
         setUser(null);
       }
@@ -47,6 +50,7 @@ export function App() {
 
   const handleLoginSuccess = (loggedInUser: UserProfile) => {
     setUser(loggedInUser);
+    setCurrentView('dashboard');
   };
 
   const handleSignOut = async () => {
@@ -56,6 +60,7 @@ export function App() {
       console.error('Error signing out:', error);
     }
     setUser(null);
+    setCurrentView('landing');
   };
 
   if (initializing) {
@@ -78,7 +83,7 @@ export function App() {
               width: '40px',
               height: '40px',
               border: '3px solid rgba(255, 255, 255, 0.1)',
-              borderTopColor: '#6366f1',
+              borderTopColor: '#225a39',
               borderRadius: '50%',
               animation: 'spin 0.8s linear infinite',
               margin: '0 auto 1rem',
@@ -91,25 +96,44 @@ export function App() {
     );
   }
 
+  // If user is logged in and view is dashboard
+  if (user && currentView === 'dashboard') {
+    return (
+      <DashboardLayout
+        user={user}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
+  // If view is landing
+  if (currentView === 'landing') {
+    return (
+      <LandingPage
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        onOpenApp={() => {
+          if (user) {
+            setCurrentView('dashboard');
+          } else {
+            setCurrentView('auth');
+          }
+        }}
+      />
+    );
+  }
+
+  // Fallback to AuthLayout (login/register screen)
   return (
-    <>
-      {user === null ? (
-        <AuthLayout
-          theme={theme}
-          authMode={authMode}
-          onToggleTheme={handleToggleTheme}
-          onToggleAuthMode={handleToggleAuthMode}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      ) : (
-        <DashboardLayout
-          user={user}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          onSignOut={handleSignOut}
-        />
-      )}
-    </>
+    <AuthLayout
+      theme={theme}
+      authMode={authMode}
+      onToggleTheme={handleToggleTheme}
+      onToggleAuthMode={handleToggleAuthMode}
+      onLoginSuccess={handleLoginSuccess}
+    />
   );
 }
 
