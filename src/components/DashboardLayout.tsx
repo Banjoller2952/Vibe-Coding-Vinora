@@ -231,6 +231,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleNavClick = (tab: 'dashboard' | 'transactions' | 'savings' | 'reports' | 'settings') => {
     setActiveTab(tab);
     setIsMobileMenuOpen(false);
+    if (tab === 'dashboard') {
+      const scrollContainer = document.querySelector('.dash-scroll-container');
+      if (scrollContainer) {
+        scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
   };
 
   return (
@@ -245,7 +251,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           >
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <div className="dash-logo mobile-logo">
+          <div
+            className="dash-logo mobile-logo"
+            onClick={() => handleNavClick('dashboard')}
+          >
             <VinoraBrandIcon size={32} variant={theme === 'dark' ? 'green' : 'green'} />
             <span className="logo-text">Vinora</span>
           </div>
@@ -283,7 +292,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <aside className={`dash-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-top">
           {/* Logo */}
-          <div className="dash-logo">
+          <div
+            className="dash-logo"
+            onClick={() => handleNavClick('dashboard')}
+          >
             <VinoraBrandIcon size={34} variant={theme === 'dark' ? 'green' : 'green'} />
             {!isSidebarCollapsed && <span className="logo-text">Vinora</span>}
           </div>

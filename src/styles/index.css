@@ -496,6 +496,13 @@ button, input, select {
   align-items: center;
   gap: 0.75rem;
   padding-left: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dash-sidebar.collapsed .dash-logo {
+  justify-content: center;
+  padding-left: 0;
 }
 
 .logo-sparkle-icon {
